@@ -1,8 +1,10 @@
 import { Link, NavLink } from "react-router-dom";
 import { useState } from "react";
+import { useAuth } from "../../context/AuthContext";
 
 const Header = () => {
   const [menuOpen, setMenuOpen] = useState(false);
+  const { isAuthenticated, logout } = useAuth();
 
   const navLinkClass = ({ isActive }) =>
     `transition hover:text-red-400 ${
@@ -10,6 +12,11 @@ const Header = () => {
     }`;
 
   const closeMenu = () => setMenuOpen(false);
+
+  const handleLogout = async () => {
+    await logout();
+    closeMenu();
+  };
 
   return (
     <header className="sticky top-0 z-50 border-b border-white/10 bg-slate-950/95 backdrop-blur">
@@ -32,12 +39,30 @@ const Header = () => {
           <NavLink to="/series" className={navLinkClass}>
             Series
           </NavLink>
-          <NavLink to="/login" className={navLinkClass}>
-            Login
-          </NavLink>
-          <NavLink to="/register" className={navLinkClass}>
-            Register
-          </NavLink>
+
+          {!isAuthenticated ? (
+            <>
+              <NavLink to="/login" className={navLinkClass}>
+                Login
+              </NavLink>
+              <NavLink to="/register" className={navLinkClass}>
+                Register
+              </NavLink>
+            </>
+          ) : (
+            <>
+              <NavLink to="/profile" className={navLinkClass}>
+                Profile
+              </NavLink>
+              <button
+                type="button"
+                className="transition hover:text-red-400 text-white"
+                onClick={handleLogout}
+              >
+                Logout
+              </button>
+            </>
+          )}
         </nav>
 
         <button
@@ -65,16 +90,38 @@ const Header = () => {
             <NavLink to="/series" className={navLinkClass} onClick={closeMenu}>
               Series
             </NavLink>
-            <NavLink to="/login" className={navLinkClass} onClick={closeMenu}>
-              Login
-            </NavLink>
-            <NavLink
-              to="/register"
-              className={navLinkClass}
-              onClick={closeMenu}
-            >
-              Register
-            </NavLink>
+
+            {!isAuthenticated ? (
+              <>
+                <NavLink to="/login" className={navLinkClass} onClick={closeMenu}>
+                  Login
+                </NavLink>
+                <NavLink
+                  to="/register"
+                  className={navLinkClass}
+                  onClick={closeMenu}
+                >
+                  Register
+                </NavLink>
+              </>
+            ) : (
+              <>
+                <NavLink
+                  to="/profile"
+                  className={navLinkClass}
+                  onClick={closeMenu}
+                >
+                  Profile
+                </NavLink>
+                <button
+                  type="button"
+                  className="text-left text-white transition hover:text-red-400"
+                  onClick={handleLogout}
+                >
+                  Logout
+                </button>
+              </>
+            )}
           </div>
         </nav>
       )}

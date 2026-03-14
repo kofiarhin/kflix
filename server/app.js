@@ -1,13 +1,25 @@
 const express = require("express");
-const app = express();
 const cors = require("cors");
+const cookieParser = require("cookie-parser");
+const authRoutes = require("./routes/authRoutes");
 
-// setup middleware
-app.use(cors("*"));
+const app = express();
+
+app.use(
+  cors({
+    origin: process.env.CLIENT_URL,
+    credentials: true,
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+  }),
+);
 app.use(express.json());
+app.use(cookieParser());
 
-app.get("/", async (req, res, next) => {
+app.get("/", async (req, res) => {
   return res.json({ message: "welcome to kflix" });
 });
+
+app.use("/api/auth", authRoutes);
 
 module.exports = app;
