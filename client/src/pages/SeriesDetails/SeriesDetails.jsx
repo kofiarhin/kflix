@@ -1,8 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
+import { useAuth } from "../../context/AuthContext";
+import { useWatchlist } from "../../context/WatchlistContext";
 
 const SeriesDetails = () => {
   const { id } = useParams();
+  const navigate = useNavigate();
+  const { isAuthenticated } = useAuth();
+  const { addToWatchlist, removeFromWatchlist, isInWatchlist } = useWatchlist();
   const [series, setSeries] = useState(null);
   const [expandedReviews, setExpandedReviews] = useState({});
   const [loading, setLoading] = useState(true);
@@ -129,6 +134,35 @@ const SeriesDetails = () => {
     };
   }, [reviews]);
 
+  const savedInWatchlist = series ? isInWatchlist(series.id, "tv") : false;
+
+  const handleWatchlistToggle = async () => {
+    if (!series) {
+      return;
+    }
+
+    if (!isAuthenticated) {
+      navigate("/login");
+      return;
+    }
+
+    if (savedInWatchlist) {
+      await removeFromWatchlist(series.id, "tv");
+      return;
+    }
+
+    await addToWatchlist({
+      tmdbId: series.id,
+      mediaType: "tv",
+      title: series.name || "",
+      posterPath: series.poster_path || "",
+      backdropPath: series.backdrop_path || "",
+      overview: series.overview || "",
+      releaseDate: series.first_air_date || "",
+      voteAverage: Number(series.vote_average) || 0,
+    });
+  };
+
   if (loading) return <p className="p-6 text-white">Loading...</p>;
   if (error) return <p className="p-6 text-red-400">{error}</p>;
   if (!series) return <p className="p-6 text-white">Series not found.</p>;
@@ -226,6 +260,16 @@ const SeriesDetails = () => {
                 </a>
               </div>
             )}
+
+            <div className="mt-4">
+              <button
+                type="button"
+                onClick={handleWatchlistToggle}
+                className="inline-flex items-center rounded-xl border border-white/20 px-5 py-3 font-semibold text-white transition hover:bg-white hover:text-slate-950"
+              >
+                {savedInWatchlist ? "Remove from Watchlist" : "Add to Watchlist"}
+              </button>
+            </div>
           </div>
         </div>
       </div>

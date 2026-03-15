@@ -1,8 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
+import { useAuth } from "../../context/AuthContext";
+import { useWatchlist } from "../../context/WatchlistContext";
 
 const MovieDetails = () => {
   const { id } = useParams();
+  const navigate = useNavigate();
+  const { isAuthenticated } = useAuth();
+  const { addToWatchlist, removeFromWatchlist, isInWatchlist } = useWatchlist();
   const [movie, setMovie] = useState(null);
   const [expandedReviews, setExpandedReviews] = useState({});
   const [loading, setLoading] = useState(true);
@@ -118,6 +123,35 @@ const MovieDetails = () => {
     };
   }, [reviews]);
 
+  const savedInWatchlist = movie ? isInWatchlist(movie.id, "movie") : false;
+
+  const handleWatchlistToggle = async () => {
+    if (!movie) {
+      return;
+    }
+
+    if (!isAuthenticated) {
+      navigate("/login");
+      return;
+    }
+
+    if (savedInWatchlist) {
+      await removeFromWatchlist(movie.id, "movie");
+      return;
+    }
+
+    await addToWatchlist({
+      tmdbId: movie.id,
+      mediaType: "movie",
+      title: movie.title || "",
+      posterPath: movie.poster_path || "",
+      backdropPath: movie.backdrop_path || "",
+      overview: movie.overview || "",
+      releaseDate: movie.release_date || "",
+      voteAverage: Number(movie.vote_average) || 0,
+    });
+  };
+
   if (loading) return <p className="p-6 text-white">Loading...</p>;
   if (error) return <p className="p-6 text-red-400">{error}</p>;
   if (!movie) return <p className="p-6 text-white">Movie not found.</p>;
@@ -205,6 +239,16 @@ const MovieDetails = () => {
                 </a>
               </div>
             )}
+
+            <div className="mt-4">
+              <button
+                type="button"
+                onClick={handleWatchlistToggle}
+                className="inline-flex items-center rounded-xl border border-white/20 px-5 py-3 font-semibold text-white transition hover:bg-white hover:text-slate-950"
+              >
+                {savedInWatchlist ? "Remove from Watchlist" : "Add to Watchlist"}
+              </button>
+            </div>
           </div>
         </div>
       </div>

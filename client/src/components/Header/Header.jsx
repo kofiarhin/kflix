@@ -1,5 +1,5 @@
-import { Link, NavLink } from "react-router-dom";
 import { useState } from "react";
+import { Link, NavLink } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 
 const Header = () => {
@@ -51,12 +51,15 @@ const Header = () => {
             </>
           ) : (
             <>
+              <NavLink to="/watchlist" className={navLinkClass}>
+                Watchlist
+              </NavLink>
               <NavLink to="/profile" className={navLinkClass}>
                 Profile
               </NavLink>
               <button
                 type="button"
-                className="transition hover:text-red-400 text-white"
+                className="text-white transition hover:text-red-400"
                 onClick={handleLogout}
               >
                 Logout
@@ -106,6 +109,13 @@ const Header = () => {
               </>
             ) : (
               <>
+                <NavLink
+                  to="/watchlist"
+                  className={navLinkClass}
+                  onClick={closeMenu}
+                >
+                  Watchlist
+                </NavLink>
                 <NavLink
                   to="/profile"
                   className={navLinkClass}

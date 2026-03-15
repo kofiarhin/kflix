@@ -1,15 +1,15 @@
-import React from "react";
-import Movies from "./pages/Movies/Movies";
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
-import Home from "./pages/Home/Home";
-import MovieDetails from "./pages/MovieDetails/MovieDetails";
+import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
 import Header from "./components/Header/Header";
-import Series from "./pages/Series/Series";
-import SeriesDetails from "./pages/SeriesDetails/SeriesDetails";
-import Login from "./pages/Login/Login";
-import Register from "./pages/Register/Register";
 import ProtectedRoute from "./components/ProtectedRoute/ProtectedRoute";
+import Home from "./pages/Home/Home";
+import Login from "./pages/Login/Login";
+import MovieDetails from "./pages/MovieDetails/MovieDetails";
+import Movies from "./pages/Movies/Movies";
 import Profile from "./pages/Profile/Profile";
+import Register from "./pages/Register/Register";
+import SeriesDetails from "./pages/SeriesDetails/SeriesDetails";
+import Series from "./pages/Series/Series";
+import Watchlist from "./pages/Watchlist/Watchlist";
 
 const App = () => {
   return (
@@ -29,6 +29,14 @@ const App = () => {
             element={
               <ProtectedRoute>
                 <Profile />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/watchlist"
+            element={
+              <ProtectedRoute>
+                <Watchlist />
               </ProtectedRoute>
             }
           />

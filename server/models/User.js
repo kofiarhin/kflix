@@ -1,6 +1,52 @@
 const mongoose = require("mongoose");
 const bcrypt = require("bcryptjs");
 
+const watchlistItemSchema = new mongoose.Schema(
+  {
+    tmdbId: {
+      type: Number,
+      required: true,
+    },
+    mediaType: {
+      type: String,
+      enum: ["movie", "tv"],
+      required: true,
+    },
+    title: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+    posterPath: {
+      type: String,
+      default: "",
+    },
+    backdropPath: {
+      type: String,
+      default: "",
+    },
+    overview: {
+      type: String,
+      default: "",
+    },
+    releaseDate: {
+      type: String,
+      default: "",
+    },
+    voteAverage: {
+      type: Number,
+      default: 0,
+    },
+    savedAt: {
+      type: Date,
+      default: Date.now,
+    },
+  },
+  {
+    _id: false,
+  },
+);
+
 const userSchema = new mongoose.Schema(
   {
     fullName: {
@@ -18,6 +64,10 @@ const userSchema = new mongoose.Schema(
     password: {
       type: String,
       required: true,
+    },
+    watchlist: {
+      type: [watchlistItemSchema],
+      default: [],
     },
   },
   {

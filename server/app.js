@@ -2,6 +2,7 @@ const express = require("express");
 const cors = require("cors");
 const cookieParser = require("cookie-parser");
 const authRoutes = require("./routes/authRoutes");
+const watchlistRoutes = require("./routes/watchlistRoutes");
 
 const app = express();
 
@@ -20,5 +21,6 @@ app.get("/", async (req, res) => {
 });
 
 app.use("/api/auth", authRoutes);
+app.use("/api/watchlist", watchlistRoutes);
 
 module.exports = app;
