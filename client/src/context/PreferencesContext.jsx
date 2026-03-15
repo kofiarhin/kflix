@@ -15,8 +15,14 @@ const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
 const DEFAULT_PREFERENCES = {
   favoriteGenres: [],
-  contentType: "both",
-  discoveryStyle: "popular",
+};
+
+const normalizePreferences = (preferences) => {
+  return {
+    favoriteGenres: Array.isArray(preferences?.favoriteGenres)
+      ? preferences.favoriteGenres
+      : [],
+  };
 };
 
 const request = async (endpoint, options = {}) => {
@@ -64,7 +70,7 @@ export const PreferencesProvider = ({ children }) => {
       setLoading(true);
       setError("");
       const response = await request("/api/preferences", { method: "GET" });
-      const nextPreferences = response.data || DEFAULT_PREFERENCES;
+      const nextPreferences = normalizePreferences(response.data);
       setPreferences(nextPreferences);
       return nextPreferences;
     } catch (err) {
@@ -93,10 +99,14 @@ export const PreferencesProvider = ({ children }) => {
 
         const response = await request("/api/preferences", {
           method: "PUT",
-          body: JSON.stringify(payload),
+          body: JSON.stringify({
+            favoriteGenres: Array.isArray(payload?.favoriteGenres)
+              ? payload.favoriteGenres
+              : [],
+          }),
         });
 
-        const nextPreferences = response.data || DEFAULT_PREFERENCES;
+        const nextPreferences = normalizePreferences(response.data);
         setPreferences(nextPreferences);
         return response;
       } catch (err) {

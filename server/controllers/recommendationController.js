@@ -1,80 +1,38 @@
 const User = require("../models/User");
 
 const TMDB_BASE_URL = "https://api.themoviedb.org/3";
-const TOP_RATED_VOTE_COUNT_MIN = 300;
 
 const DEFAULT_PREFERENCES = {
   favoriteGenres: [],
-  contentType: "both",
-  discoveryStyle: "popular",
 };
 
-const buildSortBy = (discoveryStyle, mediaType) => {
-  if (discoveryStyle === "top_rated") {
-    return "vote_average.desc";
+const normalizePreferences = (preferences) => {
+  if (!preferences) {
+    return DEFAULT_PREFERENCES;
   }
-
-  if (discoveryStyle === "new") {
-    if (mediaType === "movie") {
-      return "release_date.desc";
-    }
-
-    return "first_air_date.desc";
-  }
-
-  return "popularity.desc";
-};
-
-const buildDiscoverParams = (preferences, mediaType) => {
-  const params = new URLSearchParams({
-    language: "en-US",
-    include_adult: "false",
-    sort_by: buildSortBy(preferences.discoveryStyle, mediaType),
-    page: "1",
-  });
-
-  if (preferences.favoriteGenres.length > 0) {
-    params.set("with_genres", preferences.favoriteGenres.join(","));
-  }
-
-  if (preferences.discoveryStyle === "top_rated") {
-    params.set("vote_count.gte", String(TOP_RATED_VOTE_COUNT_MIN));
-  }
-
-  return params;
-};
-
-const normalizeResult = (item, mediaType) => {
-  const title = mediaType === "movie" ? item.title : item.name;
-  const releaseDate = mediaType === "movie" ? item.release_date : item.first_air_date;
 
   return {
-    id: item.id,
-    mediaType,
-    title: title || "Untitled",
-    posterPath: item.poster_path || "",
-    backdropPath: item.backdrop_path || "",
-    overview: item.overview || "",
-    releaseDate: releaseDate || "",
-    voteAverage: Number(item.vote_average) || 0,
+    favoriteGenres: Array.isArray(preferences.favoriteGenres)
+      ? preferences.favoriteGenres
+          .map((genreId) => Number(genreId))
+          .filter((genreId) => Number.isInteger(genreId) && genreId > 0)
+      : [],
   };
 };
 
-const interleaveResults = (movies, series) => {
-  const merged = [];
-  const maxLength = Math.max(movies.length, series.length);
+const normalizeMovie = (movie) => {
+  const title = movie.title || "";
 
-  for (let index = 0; index < maxLength; index += 1) {
-    if (movies[index]) {
-      merged.push(movies[index]);
-    }
-
-    if (series[index]) {
-      merged.push(series[index]);
-    }
-  }
-
-  return merged;
+  return {
+    id: movie.id,
+    mediaType: "movie",
+    title,
+    posterPath: movie.poster_path || "",
+    backdropPath: movie.backdrop_path || "",
+    overview: movie.overview || "",
+    releaseDate: movie.release_date || "",
+    voteAverage: Number(movie.vote_average) || 0,
+  };
 };
 
 const getTmdbRequestConfig = (params) => {
@@ -104,11 +62,17 @@ const getTmdbRequestConfig = (params) => {
   throw new Error("TMDB credentials are not configured");
 };
 
-const fetchDiscoverResults = async (mediaType, preferences) => {
-  const params = buildDiscoverParams(preferences, mediaType);
-  const requestConfig = getTmdbRequestConfig(params);
+const fetchMovieRecommendations = async (favoriteGenres) => {
+  const params = new URLSearchParams({
+    language: "en-US",
+    include_adult: "false",
+    sort_by: "popularity.desc",
+    page: "1",
+    with_genres: favoriteGenres.join(","),
+  });
 
-  const endpoint = `${TMDB_BASE_URL}/discover/${mediaType}?${requestConfig.params.toString()}`;
+  const requestConfig = getTmdbRequestConfig(params);
+  const endpoint = `${TMDB_BASE_URL}/discover/movie?${requestConfig.params.toString()}`;
 
   const response = await fetch(endpoint, {
     method: "GET",
@@ -116,34 +80,20 @@ const fetchDiscoverResults = async (mediaType, preferences) => {
   });
 
   if (!response.ok) {
-    throw new Error(`TMDB discover ${mediaType} request failed`);
+    throw new Error("TMDB discover movie request failed");
   }
 
   const data = await response.json();
-  const results = Array.isArray(data.results) ? data.results : [];
-  return results.map((item) => normalizeResult(item, mediaType));
-};
+  const rawResults = Array.isArray(data.results) ? data.results : [];
 
-const normalizePreferences = (preferences) => {
-  if (!preferences) {
-    return DEFAULT_PREFERENCES;
-  }
+  const normalized = rawResults
+    .map((movie) => normalizeMovie(movie))
+    .filter((movie) => movie.id && movie.title);
 
-  return {
-    favoriteGenres: Array.isArray(preferences.favoriteGenres)
-      ? preferences.favoriteGenres
-      : [],
-    contentType: ["movie", "tv", "both"].includes(preferences.contentType)
-      ? preferences.contentType
-      : "both",
-    discoveryStyle: ["popular", "top_rated", "new"].includes(preferences.discoveryStyle)
-      ? preferences.discoveryStyle
-      : "popular",
-  };
-};
+  const withPoster = normalized.filter((movie) => movie.posterPath);
+  const withoutPoster = normalized.filter((movie) => !movie.posterPath);
 
-const hasMeaningfulPreferences = (preferences) => {
-  return preferences.favoriteGenres.length > 0;
+  return [...withPoster, ...withoutPoster];
 };
 
 const getForYouRecommendations = async (req, res) => {
@@ -159,39 +109,17 @@ const getForYouRecommendations = async (req, res) => {
 
   const preferences = normalizePreferences(user.preferences);
 
-  if (!hasMeaningfulPreferences(preferences)) {
+  if (preferences.favoriteGenres.length === 0) {
     return res.status(200).json({
       success: true,
       data: [],
       preferencesConfigured: false,
-      message: "Preferences are not configured yet",
+      message: "Favorite genres are not configured yet",
     });
   }
 
   try {
-    const shouldFetchMovies = preferences.contentType === "movie" || preferences.contentType === "both";
-    const shouldFetchSeries = preferences.contentType === "tv" || preferences.contentType === "both";
-
-    let movieResults = [];
-    let tvResults = [];
-
-    if (shouldFetchMovies) {
-      movieResults = await fetchDiscoverResults("movie", preferences);
-    }
-
-    if (shouldFetchSeries) {
-      tvResults = await fetchDiscoverResults("tv", preferences);
-    }
-
-    let recommendations = [];
-
-    if (preferences.contentType === "movie") {
-      recommendations = movieResults;
-    } else if (preferences.contentType === "tv") {
-      recommendations = tvResults;
-    } else {
-      recommendations = interleaveResults(movieResults, tvResults);
-    }
+    const recommendations = await fetchMovieRecommendations(preferences.favoriteGenres);
 
     return res.status(200).json({
       success: true,

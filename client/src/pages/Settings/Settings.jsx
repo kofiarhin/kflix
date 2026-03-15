@@ -13,19 +13,37 @@ const Settings = () => {
   } = usePreferences();
 
   const [favoriteGenres, setFavoriteGenres] = useState([]);
-  const [contentType, setContentType] = useState("both");
-  const [discoveryStyle, setDiscoveryStyle] = useState("popular");
   const [feedback, setFeedback] = useState({ type: "", message: "" });
 
   useEffect(() => {
-    fetchPreferences().catch(() => {});
-  }, [fetchPreferences]);
+    let isMounted = true;
 
-  useEffect(() => {
-    setFavoriteGenres(Array.isArray(preferences.favoriteGenres) ? preferences.favoriteGenres : []);
-    setContentType(preferences.contentType || "both");
-    setDiscoveryStyle(preferences.discoveryStyle || "popular");
-  }, [preferences]);
+    const loadPreferences = async () => {
+      try {
+        const nextPreferences = await fetchPreferences();
+
+        if (isMounted) {
+          setFavoriteGenres(
+            Array.isArray(nextPreferences.favoriteGenres)
+              ? nextPreferences.favoriteGenres
+              : [],
+          );
+        }
+      } catch {
+        if (isMounted) {
+          setFavoriteGenres(
+            Array.isArray(preferences.favoriteGenres) ? preferences.favoriteGenres : [],
+          );
+        }
+      }
+    };
+
+    loadPreferences();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [fetchPreferences, preferences.favoriteGenres]);
 
   const genreSet = useMemo(() => new Set(favoriteGenres), [favoriteGenres]);
 
@@ -48,8 +66,6 @@ const Settings = () => {
     try {
       const response = await updatePreferences({
         favoriteGenres,
-        contentType,
-        discoveryStyle,
       });
 
       setFeedback({
@@ -68,7 +84,7 @@ const Settings = () => {
     <div className="mx-auto max-w-5xl p-6">
       <h1 className="mb-2 text-3xl font-bold">Settings</h1>
       <p className="mb-8 text-sm text-slate-300">
-        Choose what you like and we&apos;ll personalize your For You feed.
+        Select your favorite genres to personalize your For You movie feed.
       </p>
 
       {(error || feedback.message) && (
@@ -90,7 +106,7 @@ const Settings = () => {
         <section>
           <h2 className="mb-3 text-xl font-semibold">Favorite Genres</h2>
           <p className="mb-4 text-sm text-slate-300">
-            Select one or more genres to tune recommendations.
+            Pick one or more genres to tailor the movies you see in For You.
           </p>
 
           <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-4">
@@ -108,82 +124,6 @@ const Settings = () => {
                 <span>{genre.name}</span>
               </label>
             ))}
-          </div>
-        </section>
-
-        <section>
-          <h2 className="mb-3 text-xl font-semibold">Content Type</h2>
-          <div className="flex flex-col gap-3 sm:flex-row sm:gap-6">
-            <label className="flex items-center gap-2">
-              <input
-                type="radio"
-                name="contentType"
-                value="movie"
-                checked={contentType === "movie"}
-                onChange={(event) => setContentType(event.target.value)}
-              />
-              <span>Movies</span>
-            </label>
-
-            <label className="flex items-center gap-2">
-              <input
-                type="radio"
-                name="contentType"
-                value="tv"
-                checked={contentType === "tv"}
-                onChange={(event) => setContentType(event.target.value)}
-              />
-              <span>TV Series</span>
-            </label>
-
-            <label className="flex items-center gap-2">
-              <input
-                type="radio"
-                name="contentType"
-                value="both"
-                checked={contentType === "both"}
-                onChange={(event) => setContentType(event.target.value)}
-              />
-              <span>Both</span>
-            </label>
-          </div>
-        </section>
-
-        <section>
-          <h2 className="mb-3 text-xl font-semibold">Discovery Style</h2>
-          <div className="flex flex-col gap-3 sm:flex-row sm:gap-6">
-            <label className="flex items-center gap-2">
-              <input
-                type="radio"
-                name="discoveryStyle"
-                value="popular"
-                checked={discoveryStyle === "popular"}
-                onChange={(event) => setDiscoveryStyle(event.target.value)}
-              />
-              <span>Popular</span>
-            </label>
-
-            <label className="flex items-center gap-2">
-              <input
-                type="radio"
-                name="discoveryStyle"
-                value="top_rated"
-                checked={discoveryStyle === "top_rated"}
-                onChange={(event) => setDiscoveryStyle(event.target.value)}
-              />
-              <span>Top Rated</span>
-            </label>
-
-            <label className="flex items-center gap-2">
-              <input
-                type="radio"
-                name="discoveryStyle"
-                value="new"
-                checked={discoveryStyle === "new"}
-                onChange={(event) => setDiscoveryStyle(event.target.value)}
-              />
-              <span>New</span>
-            </label>
           </div>
         </section>
 

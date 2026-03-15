@@ -23,13 +23,7 @@ const request = async (endpoint, options = {}) => {
 };
 
 const getPosterUrl = (posterPath) => {
-  return posterPath
-    ? `https://image.tmdb.org/t/p/w500${posterPath}`
-    : "https://via.placeholder.com/500x750?text=No+Image";
-};
-
-const getDetailsPath = (item) => {
-  return item.mediaType === "movie" ? `/movies/${item.id}` : `/series/${item.id}`;
+  return posterPath ? `https://image.tmdb.org/t/p/w500${posterPath}` : "";
 };
 
 const ForYou = () => {
@@ -61,7 +55,7 @@ const ForYou = () => {
   }, []);
 
   if (loading) {
-    return <div className="p-6">Loading personalized picks...</div>;
+    return <div className="p-6">Loading personalized movie picks...</div>;
   }
 
   if (error) {
@@ -74,7 +68,7 @@ const ForYou = () => {
         <div className="rounded-xl border border-white/10 bg-slate-900/60 p-8 text-center">
           <h1 className="mb-3 text-2xl font-bold">Your For You feed is empty</h1>
           <p className="mb-6 text-slate-300">
-            Set your preferences to personalize your feed.
+            Select your favorite genres in Settings to personalize your For You page.
           </p>
           <Link
             to="/settings"
@@ -92,8 +86,8 @@ const ForYou = () => {
       <div className="p-6">
         <h1 className="mb-2 text-2xl font-bold">For You</h1>
         <p className="text-slate-300">
-          We couldn&apos;t find recommendations with your current settings. Try updating
-          your preferences.
+          We couldn&apos;t find movies with your current genre selection. Try updating your
+          favorite genres in Settings.
         </p>
       </div>
     );
@@ -106,23 +100,24 @@ const ForYou = () => {
       <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         {items.map((item) => (
           <Link
-            key={`${item.mediaType}-${item.id}`}
-            to={getDetailsPath(item)}
+            key={item.id}
+            to={`/movies/${item.id}`}
             className="overflow-hidden rounded-xl border border-white/10 bg-slate-900/70 transition hover:scale-[1.01]"
           >
-            <img
-              src={getPosterUrl(item.posterPath)}
-              alt={item.title}
-              className="h-[360px] w-full object-cover"
-            />
+            {item.posterPath ? (
+              <img
+                src={getPosterUrl(item.posterPath)}
+                alt={item.title}
+                className="h-[360px] w-full object-cover"
+              />
+            ) : (
+              <div className="flex h-[360px] w-full items-center justify-center bg-slate-800 text-sm text-slate-300">
+                Poster unavailable
+              </div>
+            )}
 
             <div className="space-y-3 p-4">
-              <div className="flex items-center justify-between gap-3">
-                <h2 className="line-clamp-1 text-lg font-semibold">{item.title}</h2>
-                <span className="rounded-full bg-red-500/20 px-2 py-1 text-xs uppercase text-red-200">
-                  {item.mediaType}
-                </span>
-              </div>
+              <h2 className="line-clamp-1 text-lg font-semibold">{item.title}</h2>
 
               <p className="text-sm text-slate-300">
                 {item.releaseDate || "Release date unavailable"}
@@ -134,7 +129,9 @@ const ForYou = () => {
                 </p>
               )}
 
-              <p className="line-clamp-4 text-sm text-slate-300">{item.overview || "No overview available."}</p>
+              <p className="line-clamp-4 text-sm text-slate-300">
+                {item.overview || "No overview available."}
+              </p>
             </div>
           </Link>
         ))}
