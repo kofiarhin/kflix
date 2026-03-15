@@ -1,6 +1,7 @@
 import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
 import Header from "./components/Header/Header";
 import ProtectedRoute from "./components/ProtectedRoute/ProtectedRoute";
+import ForYou from "./pages/ForYou/ForYou";
 import Home from "./pages/Home/Home";
 import Login from "./pages/Login/Login";
 import MovieDetails from "./pages/MovieDetails/MovieDetails";
@@ -9,6 +10,7 @@ import Profile from "./pages/Profile/Profile";
 import Register from "./pages/Register/Register";
 import SeriesDetails from "./pages/SeriesDetails/SeriesDetails";
 import Series from "./pages/Series/Series";
+import Settings from "./pages/Settings/Settings";
 import Watchlist from "./pages/Watchlist/Watchlist";
 
 const App = () => {
@@ -37,6 +39,22 @@ const App = () => {
             element={
               <ProtectedRoute>
                 <Watchlist />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/settings"
+            element={
+              <ProtectedRoute>
+                <Settings />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/for-you"
+            element={
+              <ProtectedRoute>
+                <ForYou />
               </ProtectedRoute>
             }
           />

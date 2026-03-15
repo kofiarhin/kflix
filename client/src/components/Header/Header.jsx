@@ -51,8 +51,14 @@ const Header = () => {
             </>
           ) : (
             <>
+              <NavLink to="/for-you" className={navLinkClass}>
+                For You
+              </NavLink>
               <NavLink to="/watchlist" className={navLinkClass}>
                 Watchlist
+              </NavLink>
+              <NavLink to="/settings" className={navLinkClass}>
+                Settings
               </NavLink>
               <NavLink to="/profile" className={navLinkClass}>
                 Profile
@@ -110,11 +116,25 @@ const Header = () => {
             ) : (
               <>
                 <NavLink
+                  to="/for-you"
+                  className={navLinkClass}
+                  onClick={closeMenu}
+                >
+                  For You
+                </NavLink>
+                <NavLink
                   to="/watchlist"
                   className={navLinkClass}
                   onClick={closeMenu}
                 >
                   Watchlist
+                </NavLink>
+                <NavLink
+                  to="/settings"
+                  className={navLinkClass}
+                  onClick={closeMenu}
+                >
+                  Settings
                 </NavLink>
                 <NavLink
                   to="/profile"

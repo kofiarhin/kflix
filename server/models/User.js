@@ -69,6 +69,22 @@ const userSchema = new mongoose.Schema(
       type: [watchlistItemSchema],
       default: [],
     },
+    preferences: {
+      favoriteGenres: {
+        type: [Number],
+        default: [],
+      },
+      contentType: {
+        type: String,
+        enum: ["movie", "tv", "both"],
+        default: "both",
+      },
+      discoveryStyle: {
+        type: String,
+        enum: ["popular", "top_rated", "new"],
+        default: "popular",
+      },
+    },
   },
   {
     timestamps: true,
