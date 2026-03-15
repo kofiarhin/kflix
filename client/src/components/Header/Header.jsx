@@ -1,15 +1,32 @@
-import { useState } from "react";
-import { Link, NavLink } from "react-router-dom";
+import { useEffect, useMemo, useState } from "react";
+import { Link, NavLink, useLocation } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 
 const Header = () => {
   const [menuOpen, setMenuOpen] = useState(false);
   const { isAuthenticated, logout } = useAuth();
+  const location = useLocation();
 
-  const navLinkClass = ({ isActive }) =>
-    `transition hover:text-red-400 ${
-      isActive ? "font-semibold text-red-500" : "text-white"
-    }`;
+  useEffect(() => {
+    setMenuOpen(false);
+  }, [location.pathname]);
+
+  useEffect(() => {
+    document.body.style.overflow = menuOpen ? "hidden" : "";
+
+    const handleKeyDown = (event) => {
+      if (event.key === "Escape") {
+        setMenuOpen(false);
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      document.body.style.overflow = "";
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [menuOpen]);
 
   const closeMenu = () => setMenuOpen(false);
 
@@ -18,51 +35,85 @@ const Header = () => {
     closeMenu();
   };
 
+  const desktopNavLinkClass = ({ isActive }) =>
+    `transition hover:text-red-400 ${
+      isActive ? "font-semibold text-red-500" : "text-white"
+    }`;
+
+  const mobileNavLinkClass = ({ isActive }) =>
+    `rounded-lg px-4 py-3 text-base transition ${
+      isActive
+        ? "bg-red-500/10 font-semibold text-red-500"
+        : "text-white hover:bg-white/5 hover:text-red-400"
+    }`;
+
+  const publicLinks = useMemo(
+    () => [
+      { to: "/", label: "Home" },
+      { to: "/movies", label: "Movies" },
+      { to: "/series", label: "Series" },
+    ],
+    [],
+  );
+
+  const guestLinks = useMemo(
+    () => [
+      { to: "/login", label: "Login" },
+      { to: "/register", label: "Register" },
+    ],
+    [],
+  );
+
+  const privateLinks = useMemo(
+    () => [
+      { to: "/for-you", label: "For You" },
+      { to: "/watchlist", label: "Watchlist" },
+      { to: "/settings", label: "Settings" },
+      { to: "/profile", label: "Profile" },
+    ],
+    [],
+  );
+
   return (
     <header className="sticky top-0 z-50 border-b border-white/10 bg-slate-950/95 backdrop-blur">
-      <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
+      <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 sm:px-6">
         <Link
           to="/"
           className="text-xl font-bold tracking-wide text-white"
           onClick={closeMenu}
         >
-          MovieApp
+          Kflix
         </Link>
 
         <nav className="hidden items-center gap-6 md:flex">
-          <NavLink to="/" className={navLinkClass}>
-            Home
-          </NavLink>
-          <NavLink to="/movies" className={navLinkClass}>
-            Movies
-          </NavLink>
-          <NavLink to="/series" className={navLinkClass}>
-            Series
-          </NavLink>
+          {publicLinks.map((link) => (
+            <NavLink key={link.to} to={link.to} className={desktopNavLinkClass}>
+              {link.label}
+            </NavLink>
+          ))}
 
           {!isAuthenticated ? (
-            <>
-              <NavLink to="/login" className={navLinkClass}>
-                Login
+            guestLinks.map((link) => (
+              <NavLink
+                key={link.to}
+                to={link.to}
+                className={desktopNavLinkClass}
+              >
+                {link.label}
               </NavLink>
-              <NavLink to="/register" className={navLinkClass}>
-                Register
-              </NavLink>
-            </>
+            ))
           ) : (
             <>
-              <NavLink to="/for-you" className={navLinkClass}>
-                For You
-              </NavLink>
-              <NavLink to="/watchlist" className={navLinkClass}>
-                Watchlist
-              </NavLink>
-              <NavLink to="/settings" className={navLinkClass}>
-                Settings
-              </NavLink>
-              <NavLink to="/profile" className={navLinkClass}>
-                Profile
-              </NavLink>
+              {privateLinks.map((link) => (
+                <NavLink
+                  key={link.to}
+                  to={link.to}
+                  className={desktopNavLinkClass}
+                >
+                  {link.label}
+                </NavLink>
+              ))}
+
               <button
                 type="button"
                 className="text-white transition hover:text-red-400"
@@ -77,84 +128,94 @@ const Header = () => {
         <button
           type="button"
           onClick={() => setMenuOpen((prev) => !prev)}
-          className="flex flex-col gap-1 md:hidden"
+          className="relative z-[70] inline-flex h-10 w-10 items-center justify-center rounded-lg border border-white/10 bg-white/5 md:hidden"
           aria-label="Toggle navigation"
           aria-expanded={menuOpen}
+          aria-controls="mobile-navigation"
         >
-          <span className="h-0.5 w-6 bg-white" />
-          <span className="h-0.5 w-6 bg-white" />
-          <span className="h-0.5 w-6 bg-white" />
+          <span className="relative h-5 w-5">
+            <span
+              className={`absolute left-0 top-1/2 block h-0.5 w-5 bg-white transition duration-300 ${
+                menuOpen ? "translate-y-0 rotate-45" : "-translate-y-[8px]"
+              }`}
+            />
+            <span
+              className={`absolute left-0 top-1/2 block h-0.5 w-5 bg-white transition duration-300 ${
+                menuOpen ? "opacity-0" : "opacity-100"
+              }`}
+            />
+            <span
+              className={`absolute left-0 top-1/2 block h-0.5 w-5 bg-white transition duration-300 ${
+                menuOpen ? "translate-y-0 -rotate-45" : "translate-y-[8px]"
+              }`}
+            />
+          </span>
         </button>
       </div>
 
-      {menuOpen && (
-        <nav className="border-t border-white/10 bg-slate-950 px-6 py-4 md:hidden">
-          <div className="flex flex-col gap-4">
-            <NavLink to="/" className={navLinkClass} onClick={closeMenu}>
-              Home
-            </NavLink>
-            <NavLink to="/movies" className={navLinkClass} onClick={closeMenu}>
-              Movies
-            </NavLink>
-            <NavLink to="/series" className={navLinkClass} onClick={closeMenu}>
-              Series
-            </NavLink>
+      <div
+        className={`fixed inset-0 z-[55] bg-black/50 transition-opacity duration-300 md:hidden ${
+          menuOpen
+            ? "pointer-events-auto opacity-100"
+            : "pointer-events-none opacity-0"
+        }`}
+        onClick={closeMenu}
+        aria-hidden="true"
+      />
 
-            {!isAuthenticated ? (
-              <>
-                <NavLink to="/login" className={navLinkClass} onClick={closeMenu}>
-                  Login
-                </NavLink>
+      <nav
+        id="mobile-navigation"
+        className={`fixed right-0 top-0 z-[60] flex h-screen w-[82%] max-w-sm flex-col border-l border-white/10 bg-slate-950 px-5 pb-6 pt-20 shadow-2xl transition-transform duration-300 md:hidden ${
+          menuOpen ? "translate-x-0" : "translate-x-full"
+        }`}
+      >
+        <div className="flex flex-1 flex-col gap-2 overflow-y-auto">
+          {publicLinks.map((link) => (
+            <NavLink
+              key={link.to}
+              to={link.to}
+              className={mobileNavLinkClass}
+              onClick={closeMenu}
+            >
+              {link.label}
+            </NavLink>
+          ))}
+
+          {!isAuthenticated ? (
+            guestLinks.map((link) => (
+              <NavLink
+                key={link.to}
+                to={link.to}
+                className={mobileNavLinkClass}
+                onClick={closeMenu}
+              >
+                {link.label}
+              </NavLink>
+            ))
+          ) : (
+            <>
+              {privateLinks.map((link) => (
                 <NavLink
-                  to="/register"
-                  className={navLinkClass}
+                  key={link.to}
+                  to={link.to}
+                  className={mobileNavLinkClass}
                   onClick={closeMenu}
                 >
-                  Register
+                  {link.label}
                 </NavLink>
-              </>
-            ) : (
-              <>
-                <NavLink
-                  to="/for-you"
-                  className={navLinkClass}
-                  onClick={closeMenu}
-                >
-                  For You
-                </NavLink>
-                <NavLink
-                  to="/watchlist"
-                  className={navLinkClass}
-                  onClick={closeMenu}
-                >
-                  Watchlist
-                </NavLink>
-                <NavLink
-                  to="/settings"
-                  className={navLinkClass}
-                  onClick={closeMenu}
-                >
-                  Settings
-                </NavLink>
-                <NavLink
-                  to="/profile"
-                  className={navLinkClass}
-                  onClick={closeMenu}
-                >
-                  Profile
-                </NavLink>
-                <button
-                  type="button"
-                  className="text-left text-white transition hover:text-red-400"
-                  onClick={handleLogout}
-                >
-                  Logout
-                </button>
-              </>
-            )}
-          </div>
-        </nav>
-      )}
+              ))}
+
+              <button
+                type="button"
+                className="rounded-lg px-4 py-3 text-left text-white transition hover:bg-white/5 hover:text-red-400"
+                onClick={handleLogout}
+              >
+                Logout
+              </button>
+            </>
+          )}
+        </div>
+      </nav>
     </header>
   );
 };
