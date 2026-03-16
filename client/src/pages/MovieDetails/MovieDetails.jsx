@@ -1,17 +1,24 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
+import RecentlyViewedSection from "../../components/RecentlyViewed/RecentlyViewedSection";
+import { useRecentlyViewed } from "../../context/RecentlyViewedContext";
 import { useWatchlist } from "../../context/WatchlistContext";
+
+const RECENTLY_VIEWED_RECORD_DEDUP_WINDOW_MS = 2000;
+const recentlyViewedRecordTimestamps = new Map();
 
 const MovieDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { isAuthenticated } = useAuth();
   const { addToWatchlist, removeFromWatchlist, isInWatchlist } = useWatchlist();
+  const { recordRecentlyViewed } = useRecentlyViewed();
   const [movie, setMovie] = useState(null);
   const [expandedReviews, setExpandedReviews] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const recordedKeyRef = useRef("");
 
   const region =
     (navigator.language || "en-US").split("-")[1]?.toUpperCase() || "US";
@@ -39,7 +46,6 @@ const MovieDetails = () => {
       [reviewId]: !prev[reviewId],
     }));
   };
-
   useEffect(() => {
     const fetchMovieDetails = async () => {
       try {
@@ -72,6 +78,41 @@ const MovieDetails = () => {
 
     if (id) fetchMovieDetails();
   }, [id]);
+
+  useEffect(() => {
+    if (!isAuthenticated || !movie?.id || !movie.title) {
+      return;
+    }
+
+    const itemKey = `movie-${movie.id}`;
+    const now = Date.now();
+    const lastRecordedAt = recentlyViewedRecordTimestamps.get(itemKey) || 0;
+
+    if (recordedKeyRef.current === itemKey) {
+      return;
+    }
+
+    if (now - lastRecordedAt < RECENTLY_VIEWED_RECORD_DEDUP_WINDOW_MS) {
+      recordedKeyRef.current = itemKey;
+      return;
+    }
+
+    recordedKeyRef.current = itemKey;
+    recentlyViewedRecordTimestamps.set(itemKey, now);
+
+    recordRecentlyViewed({
+      tmdbId: movie.id,
+      mediaType: "movie",
+      title: movie.title || "",
+      posterPath: movie.poster_path || "",
+      backdropPath: movie.backdrop_path || "",
+      overview: movie.overview || "",
+      releaseDate: movie.release_date || "",
+      voteAverage: Number(movie.vote_average) || 0,
+    }).catch(() => {
+      recordedKeyRef.current = "";
+    });
+  }, [isAuthenticated, movie, recordRecentlyViewed]);
 
   const trailer =
     movie?.videos?.results?.find(
@@ -381,6 +422,8 @@ const MovieDetails = () => {
             <p className="text-slate-400">No reviews available.</p>
           )}
         </div>
+
+        <RecentlyViewedSection />
 
         {recommendedMovies.length > 0 && (
           <div className="mt-12">

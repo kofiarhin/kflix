@@ -6,6 +6,7 @@ const authRoutes = require("./routes/authRoutes");
 const watchlistRoutes = require("./routes/watchlistRoutes");
 const preferencesRoutes = require("./routes/preferencesRoutes");
 const recommendationRoutes = require("./routes/recommendationRoutes");
+const recentlyViewedRoutes = require("./routes/recentlyViewedRoutes");
 
 const app = express();
 
@@ -28,5 +29,6 @@ app.use("/api/auth", authRoutes);
 app.use("/api/watchlist", watchlistRoutes);
 app.use("/api/preferences", preferencesRoutes);
 app.use("/api/recommendations", recommendationRoutes);
+app.use("/api/recently-viewed", recentlyViewedRoutes);
 
 module.exports = app;

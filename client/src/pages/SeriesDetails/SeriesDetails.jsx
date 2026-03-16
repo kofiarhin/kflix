@@ -1,17 +1,24 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
+import RecentlyViewedSection from "../../components/RecentlyViewed/RecentlyViewedSection";
+import { useRecentlyViewed } from "../../context/RecentlyViewedContext";
 import { useWatchlist } from "../../context/WatchlistContext";
+
+const RECENTLY_VIEWED_RECORD_DEDUP_WINDOW_MS = 2000;
+const recentlyViewedRecordTimestamps = new Map();
 
 const SeriesDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { isAuthenticated } = useAuth();
   const { addToWatchlist, removeFromWatchlist, isInWatchlist } = useWatchlist();
+  const { recordRecentlyViewed } = useRecentlyViewed();
   const [series, setSeries] = useState(null);
   const [expandedReviews, setExpandedReviews] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const recordedKeyRef = useRef("");
 
   const region =
     (navigator.language || "en-US").split("-")[1]?.toUpperCase() || "US";
@@ -39,7 +46,6 @@ const SeriesDetails = () => {
       [reviewId]: !prev[reviewId],
     }));
   };
-
   useEffect(() => {
     const fetchSeriesDetails = async () => {
       try {
@@ -72,6 +78,41 @@ const SeriesDetails = () => {
 
     if (id) fetchSeriesDetails();
   }, [id]);
+
+  useEffect(() => {
+    if (!isAuthenticated || !series?.id || !series.name) {
+      return;
+    }
+
+    const itemKey = `tv-${series.id}`;
+    const now = Date.now();
+    const lastRecordedAt = recentlyViewedRecordTimestamps.get(itemKey) || 0;
+
+    if (recordedKeyRef.current === itemKey) {
+      return;
+    }
+
+    if (now - lastRecordedAt < RECENTLY_VIEWED_RECORD_DEDUP_WINDOW_MS) {
+      recordedKeyRef.current = itemKey;
+      return;
+    }
+
+    recordedKeyRef.current = itemKey;
+    recentlyViewedRecordTimestamps.set(itemKey, now);
+
+    recordRecentlyViewed({
+      tmdbId: series.id,
+      mediaType: "tv",
+      title: series.name || "",
+      posterPath: series.poster_path || "",
+      backdropPath: series.backdrop_path || "",
+      overview: series.overview || "",
+      releaseDate: series.first_air_date || "",
+      voteAverage: Number(series.vote_average) || 0,
+    }).catch(() => {
+      recordedKeyRef.current = "";
+    });
+  }, [isAuthenticated, recordRecentlyViewed, series]);
 
   const trailer =
     series?.videos?.results?.find(
@@ -506,6 +547,8 @@ const SeriesDetails = () => {
             <p className="text-slate-400">No reviews available.</p>
           )}
         </div>
+
+        <RecentlyViewedSection />
 
         {recommendedSeries.length > 0 && (
           <div className="mt-12">
