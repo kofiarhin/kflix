@@ -1,11 +1,16 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import HeroSection from "../../components/home/HeroSection";
 import ContentSection from "../../components/home/ContentSection";
+import RecentlyViewedSection from "../../components/home/RecentlyViewedSection";
 import { GENRES } from "../../constants/genres";
+import { useAuth } from "../../context/AuthContext";
+import { useRecentlyViewed } from "../../context/RecentlyViewedContext";
 
 const AUTO_PLAY_INTERVAL = 5000;
 
 const Home = () => {
+  const { isAuthenticated } = useAuth();
+  const { recentlyViewed } = useRecentlyViewed();
   const [popularMovies, setPopularMovies] = useState([]);
   const [trendingMovies, setTrendingMovies] = useState([]);
   const [popularSeries, setPopularSeries] = useState([]);
@@ -186,6 +191,10 @@ const Home = () => {
           handlePrev={handlePrev}
           handleNext={handleNext}
         />
+      )}
+
+      {isAuthenticated && recentlyViewed.length > 0 && (
+        <RecentlyViewedSection title="Recently Viewed" items={recentlyViewed} />
       )}
 
       <ContentSection

@@ -1,13 +1,16 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { useWatchlist } from "../../context/WatchlistContext";
+import { useRecentlyViewed } from "../../context/RecentlyViewedContext";
 
 const MovieDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { isAuthenticated } = useAuth();
   const { addToWatchlist, removeFromWatchlist, isInWatchlist } = useWatchlist();
+  const { addRecentlyViewed } = useRecentlyViewed();
+  const recentlyViewedKeyRef = useRef("");
   const [movie, setMovie] = useState(null);
   const [expandedReviews, setExpandedReviews] = useState({});
   const [loading, setLoading] = useState(true);
@@ -72,6 +75,32 @@ const MovieDetails = () => {
 
     if (id) fetchMovieDetails();
   }, [id]);
+
+
+  useEffect(() => {
+    if (!isAuthenticated || !movie || !movie.id || !movie.title) {
+      return;
+    }
+
+    const nextKey = `movie-${movie.id}`;
+
+    if (recentlyViewedKeyRef.current === nextKey) {
+      return;
+    }
+
+    recentlyViewedKeyRef.current = nextKey;
+
+    addRecentlyViewed({
+      tmdbId: movie.id,
+      mediaType: "movie",
+      title: movie.title || "",
+      posterPath: movie.poster_path || "",
+      backdropPath: movie.backdrop_path || "",
+      overview: movie.overview || "",
+      releaseDate: movie.release_date || "",
+      voteAverage: Number(movie.vote_average) || 0,
+    }).catch(() => {});
+  }, [isAuthenticated, movie, addRecentlyViewed]);
 
   const trailer =
     movie?.videos?.results?.find(

@@ -1,13 +1,16 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { useWatchlist } from "../../context/WatchlistContext";
+import { useRecentlyViewed } from "../../context/RecentlyViewedContext";
 
 const SeriesDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { isAuthenticated } = useAuth();
   const { addToWatchlist, removeFromWatchlist, isInWatchlist } = useWatchlist();
+  const { addRecentlyViewed } = useRecentlyViewed();
+  const recentlyViewedKeyRef = useRef("");
   const [series, setSeries] = useState(null);
   const [expandedReviews, setExpandedReviews] = useState({});
   const [loading, setLoading] = useState(true);
@@ -72,6 +75,32 @@ const SeriesDetails = () => {
 
     if (id) fetchSeriesDetails();
   }, [id]);
+
+
+  useEffect(() => {
+    if (!isAuthenticated || !series || !series.id || !series.name) {
+      return;
+    }
+
+    const nextKey = `tv-${series.id}`;
+
+    if (recentlyViewedKeyRef.current === nextKey) {
+      return;
+    }
+
+    recentlyViewedKeyRef.current = nextKey;
+
+    addRecentlyViewed({
+      tmdbId: series.id,
+      mediaType: "tv",
+      title: series.name || "",
+      posterPath: series.poster_path || "",
+      backdropPath: series.backdrop_path || "",
+      overview: series.overview || "",
+      releaseDate: series.first_air_date || "",
+      voteAverage: Number(series.vote_average) || 0,
+    }).catch(() => {});
+  }, [isAuthenticated, series, addRecentlyViewed]);
 
   const trailer =
     series?.videos?.results?.find(

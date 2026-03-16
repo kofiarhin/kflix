@@ -2,6 +2,8 @@ import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { GENRE_LOOKUP } from "../../constants/genres";
 import { usePreferences } from "../../context/PreferencesContext";
+import { useRecentlyViewed } from "../../context/RecentlyViewedContext";
+import RecentlyViewedSection from "../../components/home/RecentlyViewedSection";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 const TMDB_IMAGE_BASE_URL = "https://image.tmdb.org/t/p";
@@ -80,6 +82,7 @@ const MediaThumbnail = ({ item, title }) => {
 
 const ForYou = () => {
   const { preferences } = usePreferences();
+  const { recentlyViewed } = useRecentlyViewed();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [items, setItems] = useState([]);
@@ -185,6 +188,16 @@ const ForYou = () => {
           Edit preferences
         </Link>
       </div>
+
+      {recentlyViewed.length > 0 && (
+        <div className="mb-8">
+          <RecentlyViewedSection
+            title="Recently Viewed"
+            items={recentlyViewed}
+            compact
+          />
+        </div>
+      )}
 
       <div className="mb-6 rounded-xl border border-white/10 bg-slate-900/60 p-4">
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">

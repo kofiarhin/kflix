@@ -47,6 +47,52 @@ const watchlistItemSchema = new mongoose.Schema(
   },
 );
 
+const recentlyViewedItemSchema = new mongoose.Schema(
+  {
+    tmdbId: {
+      type: Number,
+      required: true,
+    },
+    mediaType: {
+      type: String,
+      enum: ["movie", "tv"],
+      required: true,
+    },
+    title: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+    posterPath: {
+      type: String,
+      default: "",
+    },
+    backdropPath: {
+      type: String,
+      default: "",
+    },
+    overview: {
+      type: String,
+      default: "",
+    },
+    releaseDate: {
+      type: String,
+      default: "",
+    },
+    voteAverage: {
+      type: Number,
+      default: 0,
+    },
+    viewedAt: {
+      type: Date,
+      default: Date.now,
+    },
+  },
+  {
+    _id: false,
+  },
+);
+
 const userSchema = new mongoose.Schema(
   {
     fullName: {
@@ -72,6 +118,10 @@ const userSchema = new mongoose.Schema(
     },
     watchlist: {
       type: [watchlistItemSchema],
+      default: [],
+    },
+    recentlyViewed: {
+      type: [recentlyViewedItemSchema],
       default: [],
     },
     preferences: {
