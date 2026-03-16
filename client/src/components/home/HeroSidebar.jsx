@@ -1,13 +1,22 @@
+import { Link } from "react-router-dom";
+
 const HeroSidebar = ({
   heroItems,
   heroIndex,
   setHeroIndex,
   handleNext,
-  getPosterUrl,
-  getTitle,
-  getReleaseDate,
-  getMediaLabel,
 }) => {
+  const handlePreviewKeyDown = (event, index) => {
+    if (event.key === "Enter" || event.key === " ") {
+      event.preventDefault();
+      setHeroIndex(index);
+    }
+  };
+
+  const stopPreviewPropagation = (event) => {
+    event.stopPropagation();
+  };
+
   return (
     <aside className="border-t border-white/10 bg-black/95 p-5 lg:border-l lg:border-t-0">
       <div className="mb-5 flex items-center justify-between">
@@ -30,38 +39,62 @@ const HeroSidebar = ({
           const isActive = index === heroIndex;
 
           return (
-            <button
+            <div
               key={item.id}
-              type="button"
               onClick={() => setHeroIndex(index)}
-              className={`flex w-full items-start gap-4 rounded-2xl border p-3 text-left transition ${
+              onKeyDown={(event) => handlePreviewKeyDown(event, index)}
+              tabIndex={0}
+              role="button"
+              aria-label={`Preview ${item.title}`}
+              className={`w-full rounded-2xl border p-3 text-left transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-yellow-400/80 ${
                 isActive
-                  ? "border-yellow-400 bg-white/10"
-                  : "border-white/10 bg-white/5 hover:bg-white/10"
+                  ? "border-yellow-400/90 bg-white/10 shadow-[0_0_0_1px_rgba(250,204,21,0.35)]"
+                  : "border-white/10 bg-white/5 hover:border-white/20 hover:bg-white/10"
               }`}
             >
-              <img
-                src={getPosterUrl(item.poster_path)}
-                alt={getTitle(item)}
-                className="h-24 w-16 shrink-0 rounded-lg object-cover"
-              />
+              <div className="flex items-start gap-4">
+                <Link
+                  to={item.detailRoute}
+                  onClick={stopPreviewPropagation}
+                  className="shrink-0 overflow-hidden rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-yellow-400"
+                  aria-label={`View details for ${item.title}`}
+                >
+                  <img
+                    src={item.posterUrl}
+                    alt={item.title}
+                    className="h-24 w-16 object-cover"
+                  />
+                </Link>
 
-              <div className="min-w-0">
-                <p className="mb-1 line-clamp-2 font-semibold text-white">
-                  {getTitle(item)}
-                </p>
+                <div className="min-w-0 flex-1">
+                  <Link
+                    to={item.detailRoute}
+                    onClick={stopPreviewPropagation}
+                    className="mb-1 line-clamp-2 block font-semibold text-white hover:text-yellow-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-yellow-400"
+                  >
+                    {item.title}
+                  </Link>
 
-                <p className="mb-2 text-sm text-slate-400">
-                  {getReleaseDate(item)}
-                </p>
+                  <p className="mb-2 text-sm text-slate-400">{item.releaseDate}</p>
 
-                <div className="flex flex-wrap items-center gap-2 text-xs text-slate-300">
-                  <span>⭐ {item.vote_average?.toFixed(1) || "N/A"}</span>
-                  <span>•</span>
-                  <span>{getMediaLabel(item)}</span>
+                  <div className="flex flex-wrap items-center gap-2 text-xs text-slate-300">
+                    <span>⭐ {item.rating ? item.rating.toFixed(1) : "N/A"}</span>
+                    <span>•</span>
+                    <span>{item.releaseYear}</span>
+                    <span>•</span>
+                    <span>{item.mediaLabel}</span>
+                  </div>
+
+                  <Link
+                    to={item.detailRoute}
+                    onClick={stopPreviewPropagation}
+                    className="mt-3 inline-flex text-sm font-medium text-yellow-300 transition hover:text-yellow-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-yellow-400"
+                  >
+                    View →
+                  </Link>
                 </div>
               </div>
-            </button>
+            </div>
           );
         })}
       </div>

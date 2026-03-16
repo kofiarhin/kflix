@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import HeroSection from "../../components/home/HeroSection";
 import ContentSection from "../../components/home/ContentSection";
+import { GENRES } from "../../constants/genres";
 
 const AUTO_PLAY_INTERVAL = 5000;
 
@@ -14,6 +15,13 @@ const Home = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
+  const genreLookup = useMemo(() => {
+    return GENRES.reduce((acc, genre) => {
+      acc[genre.id] = genre.name;
+      return acc;
+    }, {});
+  }, []);
+
   const getPosterUrl = (posterPath) => {
     return posterPath
       ? `https://image.tmdb.org/t/p/w500${posterPath}`
@@ -26,23 +34,35 @@ const Home = () => {
       : "https://via.placeholder.com/1280x720?text=No+Backdrop";
   };
 
-  const getDetailPath = (item) =>
-    item.media_type === "tv" ? `/series/${item.id}` : `/movies/${item.id}`;
-
-  const getBrowsePath = (item) =>
-    item.media_type === "tv" ? "/series" : "/movies";
-
-  const getTitle = (item) => item.title || item.name || "Untitled";
-
-  const getReleaseDate = (item) =>
-    item.release_date || item.first_air_date || "N/A";
-
-  const getMediaLabel = (item) =>
-    item.media_type === "tv" ? "Series" : "Movie";
-
   const currentHeroItem = useMemo(() => {
     return heroItems[heroIndex] || null;
   }, [heroItems, heroIndex]);
+
+  const normalizeHeroItem = useCallback((item) => {
+    const mediaType = item.media_type === "tv" ? "tv" : "movie";
+    const releaseDate = item.release_date || item.first_air_date || "N/A";
+
+    return {
+      id: item.id,
+      media_type: mediaType,
+      title: item.title || item.name || "Untitled",
+      releaseDate,
+      releaseYear: releaseDate !== "N/A" ? releaseDate.slice(0, 4) : "N/A",
+      rating: Number(item.vote_average) || 0,
+      overview: item.overview || "No overview available.",
+      posterPath: item.poster_path || "",
+      backdropPath: item.backdrop_path || "",
+      posterUrl: getPosterUrl(item.poster_path),
+      backdropUrl: getBackdropUrl(item.backdrop_path),
+      detailRoute: mediaType === "tv" ? `/series/${item.id}` : `/movies/${item.id}`,
+      exploreRoute: mediaType === "tv" ? "/series" : "/movies",
+      mediaLabel: mediaType === "tv" ? "Series" : "Movie",
+      genres: (item.genre_ids || [])
+        .map((genreId) => genreLookup[genreId])
+        .filter(Boolean)
+        .slice(0, 3),
+    };
+  }, [genreLookup]);
 
   useEffect(() => {
     const fetchHomeData = async () => {
@@ -109,7 +129,8 @@ const Home = () => {
                 item.backdrop_path &&
                 (item.title || item.name),
             )
-            .slice(0, 5) || [];
+            .slice(0, 5)
+            .map(normalizeHeroItem) || [];
 
         setHeroItems(featuredItems);
         setPopularMovies(popularMoviesData.results?.slice(0, 6) || []);
@@ -124,7 +145,7 @@ const Home = () => {
     };
 
     fetchHomeData();
-  }, []);
+  }, [normalizeHeroItem]);
 
   useEffect(() => {
     if (heroItems.length <= 1) return;
@@ -164,13 +185,6 @@ const Home = () => {
           setHeroIndex={setHeroIndex}
           handlePrev={handlePrev}
           handleNext={handleNext}
-          getBackdropUrl={getBackdropUrl}
-          getPosterUrl={getPosterUrl}
-          getDetailPath={getDetailPath}
-          getBrowsePath={getBrowsePath}
-          getTitle={getTitle}
-          getReleaseDate={getReleaseDate}
-          getMediaLabel={getMediaLabel}
         />
       )}
 
