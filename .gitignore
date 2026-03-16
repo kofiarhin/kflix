@@ -1,4 +1,5 @@
 .env
 node_modules
+client/node_modules
+notes.txt
 storage
-notex.txt
