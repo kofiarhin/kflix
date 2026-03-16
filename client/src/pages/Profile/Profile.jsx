@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
+import { useRecentlyViewed } from "../../context/RecentlyViewedContext";
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
@@ -29,6 +31,7 @@ const Profile = () => {
     uploadProfileImage,
     removeProfileImage,
   } = useAuth();
+  const { recentlyViewed } = useRecentlyViewed();
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [selectedFile, setSelectedFile] = useState(null);
@@ -221,6 +224,28 @@ const Profile = () => {
           </button>
         </div>
       </form>
+      {recentlyViewed.length > 0 ? (
+        <div className="mt-8 border-t border-white/10 pt-6">
+          <h2 className="text-xl font-semibold">Recently Viewed</h2>
+          <div className="mt-4 space-y-3">
+            {recentlyViewed.slice(0, 4).map((item) => {
+              const to = item.mediaType === "tv" ? `/series/${item.tmdbId}` : `/movies/${item.tmdbId}`;
+              return (
+                <Link
+                  key={`${item.mediaType}-${item.tmdbId}`}
+                  to={to}
+                  className="flex items-center justify-between rounded-lg border border-white/10 bg-slate-800/70 px-4 py-3 text-sm transition hover:border-red-500/40"
+                >
+                  <span className="line-clamp-1">{item.title}</span>
+                  <span className="ml-3 shrink-0 text-xs text-slate-400">
+                    {item.mediaType === "tv" ? "Series" : "Movie"}
+                  </span>
+                </Link>
+              );
+            })}
+          </div>
+        </div>
+      ) : null}
     </section>
   );
 };
