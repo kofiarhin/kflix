@@ -2,19 +2,32 @@ const User = require("../models/User");
 
 const TMDB_BASE_URL = "https://api.themoviedb.org/3";
 
+const VALID_CONTENT_TYPES = new Set(["movie", "tv", "both"]);
+const VALID_DISCOVERY_STYLES = new Set(["popular", "top_rated", "new"]);
+
 const DEFAULT_PREFERENCES = {
   favoriteGenres: [],
+  contentType: "both",
+  discoveryStyle: "popular",
 };
 
 const MOVIE_GENRE_IDS = new Set([
-  28, 12, 16, 35, 80, 99, 18, 10751, 14, 36, 27, 10402, 9648, 10749, 878, 10770,
-  53, 10752, 37,
+  28, 12, 16, 35, 80, 99, 18, 10751, 14, 36, 27, 10402, 9648, 10749, 878,
+  10770, 53, 10752, 37,
 ]);
 
 const TV_GENRE_IDS = new Set([
   10759, 16, 35, 80, 99, 18, 10751, 9648, 10762, 10763, 10764, 10765, 10766,
   10767, 10768,
 ]);
+
+const sanitizeFavoriteGenres = (favoriteGenres) => {
+  const numericGenres = favoriteGenres
+    .map((genreId) => Number(genreId))
+    .filter((genreId) => Number.isInteger(genreId) && genreId > 0);
+
+  return [...new Set(numericGenres)];
+};
 
 const normalizePreferences = (preferences) => {
   if (!preferences) {
@@ -23,14 +36,14 @@ const normalizePreferences = (preferences) => {
 
   return {
     favoriteGenres: Array.isArray(preferences.favoriteGenres)
-      ? [
-          ...new Set(
-            preferences.favoriteGenres
-              .map((genreId) => Number(genreId))
-              .filter((genreId) => Number.isInteger(genreId) && genreId > 0),
-          ),
-        ]
+      ? sanitizeFavoriteGenres(preferences.favoriteGenres)
       : [],
+    contentType: VALID_CONTENT_TYPES.has(preferences.contentType)
+      ? preferences.contentType
+      : DEFAULT_PREFERENCES.contentType,
+    discoveryStyle: VALID_DISCOVERY_STYLES.has(preferences.discoveryStyle)
+      ? preferences.discoveryStyle
+      : DEFAULT_PREFERENCES.discoveryStyle,
   };
 };
 
@@ -107,15 +120,6 @@ const normalizeSeries = (series) => ({
   genreIds: Array.isArray(series.genre_ids) ? series.genre_ids : [],
 });
 
-const buildDiscoverParams = (genreId) =>
-  new URLSearchParams({
-    language: "en-US",
-    include_adult: "false",
-    sort_by: "primary_release_date.desc",
-    page: "1",
-    with_genres: String(genreId),
-  });
-
 const getLatestDateValue = (item) => {
   const rawDate = item.releaseDate || item.firstAirDate;
 
@@ -123,6 +127,74 @@ const getLatestDateValue = (item) => {
 
   const timestamp = new Date(rawDate).getTime();
   return Number.isNaN(timestamp) ? 0 : timestamp;
+};
+
+const getSortBy = (mediaType, discoveryStyle) => {
+  if (discoveryStyle === "top_rated") {
+    return "vote_average.desc";
+  }
+
+  if (discoveryStyle === "new") {
+    return mediaType === "movie"
+      ? "primary_release_date.desc"
+      : "first_air_date.desc";
+  }
+
+  return "popularity.desc";
+};
+
+const buildDiscoverParams = (mediaType, genreId, discoveryStyle) => {
+  const params = new URLSearchParams({
+    language: "en-US",
+    include_adult: "false",
+    sort_by: getSortBy(mediaType, discoveryStyle),
+    page: "1",
+    with_genres: String(genreId),
+  });
+
+  if (discoveryStyle === "top_rated") {
+    params.set("vote_count.gte", "200");
+  }
+
+  if (discoveryStyle === "new") {
+    const today = new Date().toISOString().slice(0, 10);
+    if (mediaType === "movie") {
+      params.set("primary_release_date.lte", today);
+    } else {
+      params.set("first_air_date.lte", today);
+    }
+  }
+
+  return params;
+};
+
+const scoreByDiscoveryStyle = (item, matchingGenreCount, discoveryStyle) => {
+  const latestDateValue = getLatestDateValue(item);
+
+  if (discoveryStyle === "top_rated") {
+    return (
+      matchingGenreCount * 1000 +
+      item.voteAverage * 400 +
+      item.popularity * 2 +
+      latestDateValue / 10000000
+    );
+  }
+
+  if (discoveryStyle === "new") {
+    return (
+      latestDateValue / 100000 +
+      matchingGenreCount * 1000 +
+      item.voteAverage * 150 +
+      item.popularity
+    );
+  }
+
+  return (
+    matchingGenreCount * 1000 +
+    item.popularity * 8 +
+    item.voteAverage * 200 +
+    latestDateValue / 10000000
+  );
 };
 
 const getForYouRecommendations = async (req, res) => {
@@ -144,24 +216,44 @@ const getForYouRecommendations = async (req, res) => {
       success: true,
       data: [],
       preferencesConfigured: false,
+      preferences,
       message: "Favorite genres are not configured yet",
     });
   }
 
-  const movieGenres = selectedGenres.filter((genreId) =>
-    MOVIE_GENRE_IDS.has(genreId),
-  );
-  const tvGenres = selectedGenres.filter((genreId) =>
-    TV_GENRE_IDS.has(genreId),
-  );
+  const allowMovies = preferences.contentType === "movie" || preferences.contentType === "both";
+  const allowTv = preferences.contentType === "tv" || preferences.contentType === "both";
+
+  const movieGenres = allowMovies
+    ? selectedGenres.filter((genreId) => MOVIE_GENRE_IDS.has(genreId))
+    : [];
+  const tvGenres = allowTv
+    ? selectedGenres.filter((genreId) => TV_GENRE_IDS.has(genreId))
+    : [];
+
+  if (movieGenres.length === 0 && tvGenres.length === 0) {
+    return res.status(200).json({
+      success: true,
+      data: [],
+      preferencesConfigured: false,
+      preferences,
+      message: "Selected genres are not compatible with your content preference",
+    });
+  }
 
   try {
     const movieRequests = movieGenres.map((genreId) =>
-      fetchTmdb("/discover/movie", buildDiscoverParams(genreId)),
+      fetchTmdb(
+        "/discover/movie",
+        buildDiscoverParams("movie", genreId, preferences.discoveryStyle),
+      ),
     );
 
     const tvRequests = tvGenres.map((genreId) =>
-      fetchTmdb("/discover/tv", buildDiscoverParams(genreId)),
+      fetchTmdb(
+        "/discover/tv",
+        buildDiscoverParams("tv", genreId, preferences.discoveryStyle),
+      ),
     );
 
     const [movieResponses, tvResponses] = await Promise.all([
@@ -187,21 +279,17 @@ const getForYouRecommendations = async (req, res) => {
       const matchingGenreCount = normalized.genreIds.filter((genreId) =>
         selectedGenres.includes(genreId),
       ).length;
-
-      const latestDateValue = getLatestDateValue(normalized);
-
-      const score =
-        latestDateValue * 100 +
-        matchingGenreCount * 1000 +
-        normalized.voteAverage * 100 +
-        normalized.popularity;
+      const score = scoreByDiscoveryStyle(
+        normalized,
+        matchingGenreCount,
+        preferences.discoveryStyle,
+      );
 
       if (!scoredMap.has(key)) {
         scoredMap.set(key, {
           ...normalized,
           score,
           matchingGenreCount,
-          latestDateValue,
         });
         return;
       }
@@ -221,7 +309,6 @@ const getForYouRecommendations = async (req, res) => {
           existing.matchingGenreCount,
           matchingGenreCount,
         ),
-        latestDateValue: Math.max(existing.latestDateValue, latestDateValue),
         score: Math.max(existing.score, score),
       });
     };
@@ -237,33 +324,14 @@ const getForYouRecommendations = async (req, res) => {
     }
 
     const recommendations = Array.from(scoredMap.values())
-      .sort((a, b) => {
-        if (b.latestDateValue !== a.latestDateValue) {
-          return b.latestDateValue - a.latestDateValue;
-        }
-        if (b.matchingGenreCount !== a.matchingGenreCount) {
-          return b.matchingGenreCount - a.matchingGenreCount;
-        }
-        if (b.voteAverage !== a.voteAverage) {
-          return b.voteAverage - a.voteAverage;
-        }
-        return b.popularity - a.popularity;
-      })
-      .map(
-        ({
-          score,
-          matchingGenreCount,
-          popularity,
-          genreIds,
-          latestDateValue,
-          ...item
-        }) => item,
-      );
+      .sort((a, b) => b.score - a.score)
+      .map(({ score, matchingGenreCount, popularity, genreIds, ...item }) => item);
 
     return res.status(200).json({
       success: true,
       data: recommendations.slice(0, 40),
       preferencesConfigured: true,
+      preferences,
       message: "OK",
     });
   } catch (error) {

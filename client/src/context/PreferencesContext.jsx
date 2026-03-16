@@ -13,15 +13,34 @@ const PreferencesContext = createContext(null);
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
+const VALID_CONTENT_TYPES = new Set(["movie", "tv", "both"]);
+const VALID_DISCOVERY_STYLES = new Set(["popular", "top_rated", "new"]);
+
 const DEFAULT_PREFERENCES = {
   favoriteGenres: [],
+  contentType: "both",
+  discoveryStyle: "popular",
+};
+
+const sanitizeFavoriteGenres = (favoriteGenres) => {
+  const numericGenres = favoriteGenres
+    .map((genreId) => Number(genreId))
+    .filter((genreId) => Number.isInteger(genreId) && genreId > 0);
+
+  return [...new Set(numericGenres)];
 };
 
 const normalizePreferences = (preferences) => {
   return {
     favoriteGenres: Array.isArray(preferences?.favoriteGenres)
-      ? preferences.favoriteGenres
+      ? sanitizeFavoriteGenres(preferences.favoriteGenres)
       : [],
+    contentType: VALID_CONTENT_TYPES.has(preferences?.contentType)
+      ? preferences.contentType
+      : DEFAULT_PREFERENCES.contentType,
+    discoveryStyle: VALID_DISCOVERY_STYLES.has(preferences?.discoveryStyle)
+      ? preferences.discoveryStyle
+      : DEFAULT_PREFERENCES.discoveryStyle,
   };
 };
 
@@ -97,13 +116,11 @@ export const PreferencesProvider = ({ children }) => {
         setSaving(true);
         setError("");
 
+        const nextPayload = normalizePreferences(payload);
+
         const response = await request("/api/preferences", {
           method: "PUT",
-          body: JSON.stringify({
-            favoriteGenres: Array.isArray(payload?.favoriteGenres)
-              ? payload.favoriteGenres
-              : [],
-          }),
+          body: JSON.stringify(nextPayload),
         });
 
         const nextPreferences = normalizePreferences(response.data);

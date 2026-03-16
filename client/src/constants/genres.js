@@ -27,3 +27,45 @@ export const GENRES = [
   { id: 10767, name: "Talk" },
   { id: 10768, name: "War & Politics" },
 ];
+
+const MOVIE_GENRE_IDS = new Set([
+  28, 12, 16, 35, 80, 99, 18, 10751, 14, 36, 27, 10402, 9648, 10749, 878,
+  10770, 53, 10752, 37,
+]);
+
+const TV_GENRE_IDS = new Set([
+  10759, 16, 35, 80, 99, 18, 10751, 9648, 10762, 10763, 10764, 10765, 10766,
+  10767, 10768,
+]);
+
+const pickGenres = (genreIds) => {
+  const idSet = new Set(genreIds);
+  return GENRES.filter((genre) => idSet.has(genre.id));
+};
+
+export const GENRE_GROUPS = [
+  {
+    key: "core",
+    title: "Core picks",
+    description: "Blockbusters and narrative favorites.",
+    genres: pickGenres([28, 12, 35, 80, 18, 14, 27, 9648, 10749, 878, 53]),
+  },
+  {
+    key: "story-world",
+    title: "Family & world",
+    description: "Family-friendly, factual, and period stories.",
+    genres: pickGenres([16, 99, 10751, 36, 10402, 10752, 37]),
+  },
+  {
+    key: "episodic",
+    title: "Series & episodic",
+    description: "TV-native formats and ongoing series genres.",
+    genres: pickGenres([
+      10759, 10762, 10763, 10764, 10765, 10766, 10767, 10768, 10770,
+    ]),
+  },
+];
+
+export const GENRE_LOOKUP = new Map(GENRES.map((genre) => [genre.id, genre]));
+
+export { MOVIE_GENRE_IDS, TV_GENRE_IDS };

@@ -1,7 +1,12 @@
 const User = require("../models/User");
 
+const VALID_CONTENT_TYPES = new Set(["movie", "tv", "both"]);
+const VALID_DISCOVERY_STYLES = new Set(["popular", "top_rated", "new"]);
+
 const DEFAULT_PREFERENCES = {
   favoriteGenres: [],
+  contentType: "both",
+  discoveryStyle: "popular",
 };
 
 const validationError = (res, field, message) => {
@@ -30,6 +35,12 @@ const normalizePreferences = (preferences) => {
     favoriteGenres: Array.isArray(preferences.favoriteGenres)
       ? sanitizeFavoriteGenres(preferences.favoriteGenres)
       : [],
+    contentType: VALID_CONTENT_TYPES.has(preferences.contentType)
+      ? preferences.contentType
+      : DEFAULT_PREFERENCES.contentType,
+    discoveryStyle: VALID_DISCOVERY_STYLES.has(preferences.discoveryStyle)
+      ? preferences.discoveryStyle
+      : DEFAULT_PREFERENCES.discoveryStyle,
   };
 };
 
@@ -52,13 +63,29 @@ const getPreferences = async (req, res) => {
 };
 
 const updatePreferences = async (req, res) => {
-  const { favoriteGenres } = req.body;
+  const { favoriteGenres, contentType, discoveryStyle } = req.body;
 
   if (!Array.isArray(favoriteGenres)) {
     return validationError(
       res,
       "favoriteGenres",
       "favoriteGenres must be an array of numbers",
+    );
+  }
+
+  if (!VALID_CONTENT_TYPES.has(contentType)) {
+    return validationError(
+      res,
+      "contentType",
+      "contentType must be one of movie, tv, or both",
+    );
+  }
+
+  if (!VALID_DISCOVERY_STYLES.has(discoveryStyle)) {
+    return validationError(
+      res,
+      "discoveryStyle",
+      "discoveryStyle must be one of popular, top_rated, or new",
     );
   }
 
@@ -77,6 +104,8 @@ const updatePreferences = async (req, res) => {
   user.preferences = {
     ...(user.preferences || {}),
     favoriteGenres: sanitizedGenres,
+    contentType,
+    discoveryStyle,
   };
 
   await user.save();
