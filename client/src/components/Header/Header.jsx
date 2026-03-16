@@ -2,9 +2,30 @@ import { useEffect, useMemo, useState } from "react";
 import { Link, NavLink, useLocation } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
+
+const getInitials = (fullName = "") => {
+  return fullName
+    .split(" ")
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((part) => part.charAt(0).toUpperCase())
+    .join("");
+};
+
+const buildImageUrl = (profileImagePath) => {
+  if (!profileImagePath) return "";
+
+  if (/^https?:\/\//i.test(profileImagePath)) {
+    return profileImagePath;
+  }
+
+  return `${API_URL}${profileImagePath}`;
+};
+
 const Header = () => {
   const [menuOpen, setMenuOpen] = useState(false);
-  const { isAuthenticated, logout } = useAuth();
+  const { isAuthenticated, logout, user } = useAuth();
   const location = useLocation();
 
   useEffect(() => {
@@ -74,6 +95,8 @@ const Header = () => {
     [],
   );
 
+  const profileImageUrl = buildImageUrl(user?.profileImage);
+
   return (
     <header className="sticky top-0 z-50 border-b border-white/10 bg-slate-950/95 backdrop-blur">
       <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 sm:px-6">
@@ -114,13 +137,27 @@ const Header = () => {
                 </NavLink>
               ))}
 
-              <button
-                type="button"
-                className="text-white transition hover:text-red-400"
-                onClick={handleLogout}
-              >
-                Logout
-              </button>
+              <div className="flex items-center gap-3">
+                {profileImageUrl ? (
+                  <img
+                    src={profileImageUrl}
+                    alt="User avatar"
+                    className="h-9 w-9 rounded-full border border-white/20 object-cover"
+                  />
+                ) : (
+                  <span className="flex h-9 w-9 items-center justify-center rounded-full border border-white/20 bg-slate-800 text-xs font-semibold text-white">
+                    {getInitials(user?.fullName || "U")}
+                  </span>
+                )}
+
+                <button
+                  type="button"
+                  className="text-white transition hover:text-red-400"
+                  onClick={handleLogout}
+                >
+                  Logout
+                </button>
+              </div>
             </>
           )}
         </nav>
@@ -194,6 +231,24 @@ const Header = () => {
             ))
           ) : (
             <>
+              <div className="mb-2 flex items-center gap-3 rounded-lg border border-white/10 bg-white/5 px-4 py-3">
+                {profileImageUrl ? (
+                  <img
+                    src={profileImageUrl}
+                    alt="User avatar"
+                    className="h-10 w-10 rounded-full border border-white/20 object-cover"
+                  />
+                ) : (
+                  <span className="flex h-10 w-10 items-center justify-center rounded-full border border-white/20 bg-slate-800 text-sm font-semibold text-white">
+                    {getInitials(user?.fullName || "U")}
+                  </span>
+                )}
+                <div>
+                  <p className="text-sm font-semibold text-white">{user?.fullName}</p>
+                  <p className="text-xs text-slate-300">{user?.email}</p>
+                </div>
+              </div>
+
               {privateLinks.map((link) => (
                 <NavLink
                   key={link.to}

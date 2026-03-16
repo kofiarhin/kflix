@@ -1,17 +1,26 @@
-import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 
 const AuthContext = createContext(null);
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5000";
 
 const request = async (endpoint, options = {}) => {
+  const isFormDataBody = options.body instanceof FormData;
+
   const response = await fetch(`${API_URL}${endpoint}`, {
     credentials: "include",
+    ...options,
     headers: {
-      "Content-Type": "application/json",
+      ...(isFormDataBody ? {} : { "Content-Type": "application/json" }),
       ...(options.headers || {}),
     },
-    ...options,
   });
 
   const data = await response.json();
@@ -70,6 +79,35 @@ export const AuthProvider = ({ children }) => {
     setUser(null);
   }, []);
 
+  const updateProfile = useCallback(async (payload) => {
+    const response = await request("/api/auth/profile", {
+      method: "PATCH",
+      body: JSON.stringify(payload),
+    });
+
+    setUser(response.data || null);
+    return response;
+  }, []);
+
+  const uploadProfileImage = useCallback(async (formData) => {
+    const response = await request("/api/auth/profile-image", {
+      method: "PATCH",
+      body: formData,
+    });
+
+    setUser(response.data || null);
+    return response;
+  }, []);
+
+  const removeProfileImage = useCallback(async () => {
+    const response = await request("/api/auth/profile-image", {
+      method: "DELETE",
+    });
+
+    setUser(response.data || null);
+    return response;
+  }, []);
+
   const value = useMemo(
     () => ({
       user,
@@ -79,8 +117,21 @@ export const AuthProvider = ({ children }) => {
       login,
       logout,
       checkAuth,
+      updateProfile,
+      uploadProfileImage,
+      removeProfileImage,
     }),
-    [user, loading, register, login, logout, checkAuth],
+    [
+      user,
+      loading,
+      register,
+      login,
+      logout,
+      checkAuth,
+      updateProfile,
+      uploadProfileImage,
+      removeProfileImage,
+    ],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

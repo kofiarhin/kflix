@@ -65,6 +65,11 @@ const userSchema = new mongoose.Schema(
       type: String,
       required: true,
     },
+    profileImage: {
+      type: String,
+      default: "",
+      trim: true,
+    },
     watchlist: {
       type: [watchlistItemSchema],
       default: [],
