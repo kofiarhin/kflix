@@ -81,7 +81,7 @@ const Watchlist = () => {
 
                 <div className="mb-3 flex flex-wrap items-center gap-3 text-sm text-slate-400">
                   <span>{item.releaseDate || "N/A"}</span>
-                  <span>⭐ {item.voteAverage ? item.voteAverage.toFixed(1) : "N/A"}</span>
+                  <span>* {item.voteAverage ? item.voteAverage.toFixed(1) : "N/A"}</span>
                 </div>
 
                 <p className="line-clamp-3 text-sm leading-6 text-slate-300">

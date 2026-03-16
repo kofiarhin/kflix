@@ -88,7 +88,7 @@ const HeroSection = ({
 
               <div className="mb-4 flex flex-wrap gap-3 text-sm text-slate-200">
                 <span className="rounded-full border border-white/20 px-3 py-1">
-                  ⭐ {currentHeroItem.rating ? currentHeroItem.rating.toFixed(1) : "N/A"}
+                  * {currentHeroItem.rating ? currentHeroItem.rating.toFixed(1) : "N/A"}
                 </span>
                 <span className="rounded-full border border-white/20 px-3 py-1">
                   {currentHeroItem.releaseYear}
@@ -139,7 +139,7 @@ const HeroSection = ({
                 className="absolute left-4 top-1/2 z-20 -translate-y-1/2 rounded-full bg-black/45 px-4 py-3 text-white transition hover:bg-black/65"
                 aria-label="Previous slide"
               >
-                ←
+                <-
               </button>
 
               <button
@@ -148,7 +148,7 @@ const HeroSection = ({
                 className="absolute right-4 top-1/2 z-20 -translate-y-1/2 rounded-full bg-black/45 px-4 py-3 text-white transition hover:bg-black/65 lg:hidden"
                 aria-label="Next slide"
               >
-                →
+                ->
               </button>
             </>
           )}

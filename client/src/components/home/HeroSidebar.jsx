@@ -29,7 +29,7 @@ const HeroSidebar = ({
             className="hidden rounded-full bg-white/10 px-4 py-2 text-sm text-white transition hover:bg-white/20 lg:inline-flex"
             aria-label="Next slide"
           >
-            Next →
+            Next ->
           </button>
         )}
       </div>
@@ -78,10 +78,10 @@ const HeroSidebar = ({
                   <p className="mb-2 text-sm text-slate-400">{item.releaseDate}</p>
 
                   <div className="flex flex-wrap items-center gap-2 text-xs text-slate-300">
-                    <span>⭐ {item.rating ? item.rating.toFixed(1) : "N/A"}</span>
-                    <span>•</span>
+                    <span>* {item.rating ? item.rating.toFixed(1) : "N/A"}</span>
+                    <span>-</span>
                     <span>{item.releaseYear}</span>
-                    <span>•</span>
+                    <span>-</span>
                     <span>{item.mediaLabel}</span>
                   </div>
 
@@ -90,7 +90,7 @@ const HeroSidebar = ({
                     onClick={stopPreviewPropagation}
                     className="mt-3 inline-flex text-sm font-medium text-yellow-300 transition hover:text-yellow-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-yellow-400"
                   >
-                    View →
+                    View ->
                   </Link>
                 </div>
               </div>

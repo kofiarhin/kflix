@@ -1,48 +1,26 @@
-const jwt = require("jsonwebtoken");
-const User = require("../models/User");
+const jwt = require('jsonwebtoken');
+const User = require('../models/User');
+const env = require('../config/env');
+const { COOKIE_NAME } = require('../config/constants');
+const AppError = require('../utils/appError');
+const asyncHandler = require('../utils/asyncHandler');
 
-const COOKIE_NAME = "token";
-
-const protect = async (req, res, next) => {
+const protect = asyncHandler(async (req, res, next) => {
   const token = req.cookies[COOKIE_NAME];
 
   if (!token) {
-    return res.status(401).json({
-      success: false,
-      message: "Unauthorized",
-      code: "UNAUTHORIZED",
-    });
+    throw new AppError('Unauthorized', 401, 'UNAUTHORIZED');
   }
 
-  try {
-    const jwtSecret = process.env.JWT_SECRET;
+  const decoded = jwt.verify(token, env.jwtSecret);
+  const user = await User.findById(decoded.userId).select('-password');
 
-    if (!jwtSecret) {
-      throw new Error("JWT_SECRET is not defined");
-    }
-
-    const decoded = jwt.verify(token, jwtSecret);
-    const user = await User.findById(decoded.userId).select("-password");
-
-    if (!user) {
-      return res.status(401).json({
-        success: false,
-        message: "Unauthorized",
-        code: "UNAUTHORIZED",
-      });
-    }
-
-    req.user = user;
-    return next();
-  } catch (error) {
-    return res.status(401).json({
-      success: false,
-      message: "Unauthorized",
-      code: "UNAUTHORIZED",
-    });
+  if (!user) {
+    throw new AppError('Unauthorized', 401, 'UNAUTHORIZED');
   }
-};
 
-module.exports = {
-  protect,
-};
+  req.user = user;
+  next();
+});
+
+module.exports = { protect };
