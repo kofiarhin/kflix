@@ -53,7 +53,7 @@ const MovieDetails = () => {
         setError("");
 
         const res = await fetch(
-          `https://api.themoviedb.org/3/movie/${id}?language=en-US&append_to_response=videos,similar,recommendations,reviews,watch/providers`,
+          `https://api.themoviedb.org/3/movie/${id}?language=en-US&append_to_response=videos,similar,recommendations,reviews,watch/providers,external_ids`,
           {
             method: "GET",
             headers: {
@@ -118,6 +118,10 @@ const MovieDetails = () => {
     movie?.videos?.results?.find(
       (video) => video.site === "YouTube" && video.type === "Trailer",
     ) || movie?.videos?.results?.find((video) => video.site === "YouTube");
+  const imdbId = movie?.external_ids?.imdb_id;
+  const playImdbUrl = imdbId
+    ? `https://www.playimdb.com/title/${imdbId}`
+    : "";
 
   const similarMovies = movie?.similar?.results?.slice(0, 8) || [];
   const recommendedMovies = movie?.recommendations?.results?.slice(0, 8) || [];
@@ -268,16 +272,28 @@ const MovieDetails = () => {
               {movie.overview || "No overview available."}
             </p>
 
-            {trailer && (
-              <div className="mt-8">
-                <a
-                  href={`https://www.youtube.com/watch?v=${trailer.key}`}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="inline-flex items-center rounded-xl bg-red-600 px-5 py-3 font-semibold transition hover:bg-red-500"
-                >
-                  ▶ Watch Trailer
-                </a>
+            {(trailer || playImdbUrl) && (
+              <div className="mt-8 flex flex-wrap gap-3">
+                {trailer && (
+                  <a
+                    href={`https://www.youtube.com/watch?v=${trailer.key}`}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center rounded-xl bg-red-600 px-5 py-3 font-semibold transition hover:bg-red-500"
+                  >
+                    ▶ Watch Trailer
+                  </a>
+                )}
+                {playImdbUrl && (
+                  <a
+                    href={playImdbUrl}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center rounded-xl bg-yellow-400 px-5 py-3 font-semibold text-slate-950 transition hover:bg-yellow-300"
+                  >
+                    Play IMDb
+                  </a>
+                )}
               </div>
             )}
 
