@@ -17,3 +17,5 @@ Port 5182 is in use, trying another one...
 
   [32m➜[39m  [1mLocal[22m:   [36mhttp://127.0.0.1:[1m5183[22m/[39m
 [2m2:01:15 AM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/index.css[22m
+[2m2:06:36 AM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/pages/MovieDetails/MovieDetails.jsx, /src/index.css[22m
+[2m2:06:36 AM[22m [36m[1m[vite][22m[39m [90m[2m(client)[22m[39m [32mhmr update [39m[2m/src/pages/SeriesDetails/SeriesDetails.jsx, /src/index.css[22m

@@ -1,4 +1,39 @@
+# dependencies
+node_modules/
+client/node_modules/
+
+# env / secrets
 .env
-node_modules
-storage
+.env.*
+client/.env
+client/.env.*
+
+# keep examples
+!.env.example
+!client/.env.example
+
+# builds
+client/dist/
+dist/
+
+# logs / runtime output
+*.log
+output/
+.playwright-cli/
+
+# uploads / local media
+server/uploads/
+storage/
+
+# local agent/editor settings
+.claude/settings.local.json
+.codex/settings.local.json
+
+# OS/editor noise
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# local notes
 notex.txt
