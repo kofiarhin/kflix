@@ -25,21 +25,21 @@ const RecentlyViewedSection = () => {
 
   return (
     <div className="mt-12">
-      <h2 className="mb-4 text-2xl font-bold">Recently Viewed</h2>
-      <div className="grid grid-cols-2 gap-6 sm:grid-cols-3 lg:grid-cols-5">
+      <h2 className="mb-4 text-2xl font-black tracking-tight">Recently Viewed</h2>
+      <div className="grid grid-cols-2 gap-5 sm:grid-cols-3 lg:grid-cols-5">
         {items.map((item) => (
           <Link
             key={`${item.mediaType}-${item.tmdbId}`}
             to={detailsPath(item)}
-            className="overflow-hidden rounded-2xl border border-white/10 bg-slate-900 transition hover:scale-[1.02]"
+            className="media-card"
           >
             <img
               src={posterUrl(item.posterPath)}
               alt={item.title}
-              className="h-[260px] w-full object-cover"
+              className="aspect-[2/3] w-full object-cover"
             />
             <div className="p-4">
-              <h3 className="line-clamp-1 font-semibold">{item.title}</h3>
+              <h3 className="line-clamp-1 font-bold tracking-tight">{item.title}</h3>
               <p className="mt-2 text-sm text-slate-400">
                 {item.releaseDate || "N/A"}
               </p>

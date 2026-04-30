@@ -117,13 +117,13 @@ const ForYou = () => {
 
   if (loading) {
     return (
-      <div className="mx-auto max-w-7xl p-6">
+      <div className="page-shell">
         <div className="mb-6 h-8 w-44 animate-pulse rounded bg-slate-700/60" />
         <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {Array.from({ length: 4 }).map((_, index) => (
             <div
               key={index}
-              className="h-[520px] animate-pulse rounded-xl border border-white/10 bg-slate-900/60"
+            className="h-[520px] animate-pulse rounded-[1.5rem] border border-white/10 bg-white/[0.05]"
             />
           ))}
         </div>
@@ -133,14 +133,14 @@ const ForYou = () => {
 
   if (error) {
     return (
-      <div className="mx-auto max-w-3xl p-6">
-        <div className="rounded-xl border border-red-500/30 bg-red-500/10 p-6">
-          <h1 className="text-2xl font-bold">Couldn&apos;t load For You picks</h1>
+      <div className="page-shell">
+        <div className="glass-panel mx-auto max-w-3xl rounded-[1.75rem] p-6">
+          <h1 className="text-2xl font-black tracking-tight">Couldn&apos;t load For You picks</h1>
           <p className="mt-2 text-sm text-red-200">{error}</p>
           <button
             type="button"
             onClick={loadRecommendations}
-            className="mt-4 rounded-lg bg-white/10 px-4 py-2 text-sm font-semibold transition hover:bg-white/20"
+            className="secondary-action mt-4"
           >
             Retry
           </button>
@@ -151,16 +151,16 @@ const ForYou = () => {
 
   if (!preferencesConfigured) {
     return (
-      <div className="mx-auto max-w-2xl p-6">
-        <div className="rounded-xl border border-white/10 bg-slate-900/60 p-8 text-center">
-          <h1 className="mb-3 text-2xl font-bold">Your For You feed is empty</h1>
+      <div className="page-shell">
+        <div className="glass-panel mx-auto max-w-2xl rounded-[1.75rem] p-8 text-center">
+          <h1 className="mb-3 text-2xl font-black tracking-tight">Your For You feed is empty</h1>
           <p className="mb-6 text-slate-300">
             Select your favorite genres in Settings to personalize your For You
             page.
           </p>
           <Link
             to="/settings"
-            className="inline-flex rounded-lg bg-red-600 px-5 py-3 font-semibold transition hover:bg-red-500"
+            className="primary-action"
           >
             Go to Settings
           </Link>
@@ -170,23 +170,24 @@ const ForYou = () => {
   }
 
   return (
-    <div className="mx-auto max-w-7xl p-6">
-      <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
+    <div className="page-shell">
+      <div className="mb-8 flex flex-wrap items-end justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold">For You</h1>
+          <p className="eyebrow mb-3">Personal feed</p>
+          <h1 className="text-4xl font-black tracking-tight md:text-6xl">For You</h1>
           <p className="mt-1 text-sm text-slate-300">
             Personalized picks based on your profile.
           </p>
         </div>
         <Link
           to="/settings"
-          className="rounded-lg border border-white/20 px-4 py-2 text-sm font-semibold text-slate-100 transition hover:border-white/40"
+          className="secondary-action"
         >
           Edit preferences
         </Link>
       </div>
 
-      <div className="mb-6 rounded-xl border border-white/10 bg-slate-900/60 p-4">
+      <div className="glass-panel mb-8 rounded-[1.5rem] p-4">
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
           <div>
             <p className="text-xs uppercase tracking-wide text-slate-400">Genres</p>
@@ -195,7 +196,7 @@ const ForYou = () => {
                 {selectedGenreNames.slice(0, 6).map((name) => (
                   <span
                     key={name}
-                    className="rounded-full border border-white/15 bg-white/5 px-2 py-1 text-xs"
+                    className="rounded-full border border-white/15 bg-white/[0.06] px-2 py-1 text-xs"
                   >
                     {name}
                   </span>
@@ -222,14 +223,14 @@ const ForYou = () => {
       </div>
 
       {items.length === 0 ? (
-        <div className="rounded-xl border border-white/10 bg-slate-900/60 p-6">
+        <div className="glass-panel rounded-[1.5rem] p-6">
           <p className="text-slate-300">
             We couldn&apos;t find enough results for your selected profile right
             now. Try broadening your genres or switching discovery style.
           </p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {items.map((item) => {
             const title = item.title || item.name || "Untitled";
             const releaseDate = item.releaseDate || item.firstAirDate || "";
@@ -240,14 +241,14 @@ const ForYou = () => {
               <Link
                 key={`${item.mediaType || "movie"}-${item.id}`}
                 to={detailsPath}
-                className="overflow-hidden rounded-xl border border-white/10 bg-slate-900/70 transition hover:scale-[1.01]"
+                className="media-card"
               >
                 <MediaThumbnail item={item} title={title} />
 
                 <div className="space-y-3 p-4">
                   <div className="flex items-start justify-between gap-3">
                     <h2 className="line-clamp-1 text-lg font-semibold">{title}</h2>
-                    <span className="shrink-0 rounded bg-white/10 px-2 py-1 text-xs text-slate-300">
+                      <span className="shrink-0 rounded-full bg-white/10 px-2 py-1 text-xs text-slate-300">
                       {isSeries ? "Series" : "Movie"}
                     </span>
                   </div>

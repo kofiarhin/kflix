@@ -133,12 +133,14 @@ const Profile = () => {
   };
 
   return (
-    <section className="mx-auto mt-8 max-w-2xl rounded-2xl border border-white/10 bg-slate-900 p-8 text-white">
-      <h1 className="mb-6 text-3xl font-bold">Account Settings</h1>
+    <section className="page-shell">
+      <div className="glass-panel mx-auto max-w-3xl rounded-[1.75rem] p-8 text-white">
+      <p className="eyebrow mb-3">Profile</p>
+      <h1 className="mb-8 text-4xl font-black tracking-tight">Account Settings</h1>
 
       <form onSubmit={handleSave} className="space-y-6">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center">
-          <div className="flex h-24 w-24 items-center justify-center overflow-hidden rounded-full border border-white/20 bg-slate-800">
+          <div className="flex h-28 w-28 items-center justify-center overflow-hidden rounded-[2rem] border border-white/15 bg-white/[0.06]">
             {activeImageUrl ? (
               <img src={activeImageUrl} alt="Profile" className="h-full w-full object-cover" />
             ) : (
@@ -160,7 +162,7 @@ const Profile = () => {
 
             <button
               type="button"
-              className="rounded-lg border border-white/20 px-4 py-2 text-sm font-medium transition hover:border-red-400 hover:text-red-400 disabled:cursor-not-allowed disabled:opacity-60"
+              className="secondary-action px-4 py-2 disabled:cursor-not-allowed disabled:opacity-60"
               onClick={handleRemoveImage}
               disabled={loading || (!user?.profileImage && !previewUrl)}
             >
@@ -178,7 +180,7 @@ const Profile = () => {
             type="text"
             value={fullName}
             onChange={(event) => setFullName(event.target.value)}
-            className="w-full rounded-lg border border-white/20 bg-slate-800 px-4 py-3 text-white outline-none transition focus:border-red-400"
+            className="field-control"
             disabled={loading}
             required
           />
@@ -193,7 +195,7 @@ const Profile = () => {
             type="email"
             value={email}
             onChange={(event) => setEmail(event.target.value)}
-            className="w-full rounded-lg border border-white/20 bg-slate-800 px-4 py-3 text-white outline-none transition focus:border-red-400"
+            className="field-control"
             disabled={loading}
             required
           />
@@ -205,7 +207,7 @@ const Profile = () => {
         <div className="flex flex-wrap gap-3">
           <button
             type="submit"
-            className="rounded-lg bg-red-500 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-red-600 disabled:cursor-not-allowed disabled:opacity-60"
+            className="primary-action disabled:cursor-not-allowed disabled:opacity-60"
             disabled={loading}
           >
             {loading ? "Saving..." : "Save Changes"}
@@ -213,7 +215,7 @@ const Profile = () => {
 
           <button
             type="button"
-            className="rounded-lg border border-white/20 px-5 py-2.5 text-sm font-semibold text-white transition hover:border-red-400 hover:text-red-400 disabled:cursor-not-allowed disabled:opacity-60"
+            className="secondary-action disabled:cursor-not-allowed disabled:opacity-60"
             onClick={handleReset}
             disabled={loading}
           >
@@ -221,6 +223,7 @@ const Profile = () => {
           </button>
         </div>
       </form>
+      </div>
     </section>
   );
 };

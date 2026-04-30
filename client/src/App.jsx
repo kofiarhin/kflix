@@ -15,7 +15,7 @@ import Watchlist from "./pages/Watchlist/Watchlist";
 
 const App = () => {
   return (
-    <div className="min-h-screen bg-slate-800 container mx-auto text-white">
+    <div className="app-chrome text-white">
       <Router>
         <Header />
         <Routes>

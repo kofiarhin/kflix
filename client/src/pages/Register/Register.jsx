@@ -34,11 +34,13 @@ const Register = () => {
   };
 
   return (
-    <section className="mx-auto mt-8 flex max-w-md flex-col rounded-2xl border border-white/10 bg-slate-900 p-8 text-white">
-      <h1 className="mb-2 text-3xl font-bold">Register</h1>
-      <p className="mb-6 text-sm text-slate-300">Create your Kflix account.</p>
+    <section className="page-shell grid min-h-[calc(100dvh-5rem)] place-items-center">
+      <div className="glass-panel w-full max-w-md rounded-[1.75rem] p-8 text-white">
+      <p className="eyebrow mb-3">Start watching</p>
+      <h1 className="mb-2 text-4xl font-black tracking-tight">Register</h1>
+      <p className="mb-6 text-sm leading-6 text-slate-300">Create your Kflix account.</p>
 
-      {error && <p className="mb-4 rounded-md bg-red-500/20 p-3 text-sm text-red-300">{error}</p>}
+      {error && <p className="mb-4 rounded-2xl border border-red-400/25 bg-red-500/12 p-3 text-sm text-red-200">{error}</p>}
 
       <form className="space-y-4" onSubmit={handleSubmit}>
         <div>
@@ -52,7 +54,7 @@ const Register = () => {
             value={formData.fullName}
             onChange={handleChange}
             required
-            className="w-full rounded-md border border-white/20 bg-slate-800 px-4 py-2 outline-none transition focus:border-red-400"
+            className="field-control"
           />
         </div>
 
@@ -67,7 +69,7 @@ const Register = () => {
             value={formData.email}
             onChange={handleChange}
             required
-            className="w-full rounded-md border border-white/20 bg-slate-800 px-4 py-2 outline-none transition focus:border-red-400"
+            className="field-control"
           />
         </div>
 
@@ -83,14 +85,14 @@ const Register = () => {
             onChange={handleChange}
             required
             minLength={6}
-            className="w-full rounded-md border border-white/20 bg-slate-800 px-4 py-2 outline-none transition focus:border-red-400"
+            className="field-control"
           />
         </div>
 
         <button
           type="submit"
           disabled={loading}
-          className="w-full rounded-md bg-red-500 px-4 py-2 font-semibold text-white transition hover:bg-red-400 disabled:cursor-not-allowed disabled:opacity-70"
+          className="primary-action w-full disabled:cursor-not-allowed disabled:opacity-70"
         >
           {loading ? "Creating account..." : "Register"}
         </button>
@@ -98,10 +100,11 @@ const Register = () => {
 
       <p className="mt-6 text-sm text-slate-300">
         Already have an account?{" "}
-        <Link className="font-semibold text-red-400 hover:text-red-300" to="/login">
+        <Link className="font-semibold text-red-200 hover:text-white" to="/login">
           Login here
         </Link>
       </p>
+      </div>
     </section>
   );
 };

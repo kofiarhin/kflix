@@ -53,7 +53,7 @@ const MovieDetails = () => {
         setError("");
 
         const res = await fetch(
-          `https://api.themoviedb.org/3/movie/${id}?language=en-US&append_to_response=videos,similar,recommendations,reviews,watch/providers,external_ids`,
+          `https://api.themoviedb.org/3/movie/${id}?language=en-US&append_to_response=videos,similar,recommendations,reviews,watch/providers,external_ids,credits`,
           {
             method: "GET",
             headers: {
@@ -123,9 +123,22 @@ const MovieDetails = () => {
     ? `https://www.playimdb.com/title/${imdbId}`
     : "";
 
-  const similarMovies = movie?.similar?.results?.slice(0, 8) || [];
-  const recommendedMovies = movie?.recommendations?.results?.slice(0, 8) || [];
-  const reviews = movie?.reviews?.results?.slice(0, 6) || [];
+  const similarMovies = useMemo(
+    () => movie?.similar?.results?.slice(0, 8) || [],
+    [movie?.similar?.results],
+  );
+  const recommendedMovies = useMemo(
+    () => movie?.recommendations?.results?.slice(0, 8) || [],
+    [movie?.recommendations?.results],
+  );
+  const reviews = useMemo(
+    () => movie?.reviews?.results?.slice(0, 6) || [],
+    [movie?.reviews?.results],
+  );
+  const cast = useMemo(
+    () => movie?.credits?.cast?.slice(0, 8) || [],
+    [movie?.credits?.cast],
+  );
 
   const providerData =
     movie?.["watch/providers"]?.results?.[region] ||
@@ -197,122 +210,207 @@ const MovieDetails = () => {
     });
   };
 
-  if (loading) return <p className="p-6 text-white">Loading...</p>;
-  if (error) return <p className="p-6 text-red-400">{error}</p>;
-  if (!movie) return <p className="p-6 text-white">Movie not found.</p>;
+  if (loading) {
+    return (
+      <section className="page-shell">
+        <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_340px]">
+          <div className="aspect-video animate-pulse rounded-[1.5rem] bg-white/10" />
+          <div className="space-y-4">
+            <div className="h-96 animate-pulse rounded-[1.5rem] bg-white/10" />
+            <div className="h-12 animate-pulse rounded-full bg-white/10" />
+          </div>
+        </div>
+      </section>
+    );
+  }
+
+  if (error) return <p className="page-shell text-red-200">{error}</p>;
+  if (!movie) return <p className="page-shell text-white">Movie not found.</p>;
+
+  const detailFacts = [
+    { label: "Released", value: movie.release_date || "N/A" },
+    { label: "Rating", value: movie.vote_average ? `${movie.vote_average.toFixed(1)}/10` : "N/A" },
+    { label: "Runtime", value: movie.runtime ? `${movie.runtime} min` : "N/A" },
+    { label: "Status", value: movie.status || "Unknown" },
+  ];
 
   return (
-    <section className="min-h-screen bg-slate-950 text-white">
-      <div
-        className="relative"
-        style={{
-          backgroundImage: movie.backdrop_path
-            ? `url(${getBackdropUrl(movie.backdrop_path)})`
-            : "none",
-          backgroundSize: "cover",
-          backgroundPosition: "center",
-        }}
-      >
-        <div className="absolute inset-0 bg-slate-950/85" />
+    <section className="text-white">
+      <div className="relative overflow-hidden">
+        {movie.backdrop_path && (
+          <div
+            aria-hidden="true"
+            className="absolute inset-0 opacity-35 blur-sm"
+            style={{
+              backgroundImage: `url(${getBackdropUrl(movie.backdrop_path)})`,
+              backgroundSize: "cover",
+              backgroundPosition: "center",
+            }}
+          />
+        )}
+        <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(12,13,16,0.68),#0c0d10_82%)]" />
 
-        <div className="relative z-10 mx-auto grid max-w-7xl gap-8 px-6 py-10 md:grid-cols-[320px_1fr]">
-          <div>
-            <img
-              src={getPosterUrl(movie.poster_path)}
-              alt={movie.title}
-              className="w-full rounded-2xl object-cover shadow-2xl"
-            />
+        <div className="relative mx-auto max-w-[1400px] px-4 pb-10 pt-24 sm:px-6 lg:pb-14">
+          <Link to="/movies" className="secondary-action mb-5 w-fit">
+            Back to Movies
+          </Link>
+
+          <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_340px] xl:grid-cols-[minmax(0,1fr)_380px]">
+            <div className="overflow-hidden rounded-[1.5rem] border border-white/10 bg-[#111217] shadow-[0_28px_90px_-48px_rgba(0,0,0,0.9)]">
+              <div className="aspect-video w-full bg-[#15161b]">
+                {trailer ? (
+                  <iframe
+                    key={trailer.key}
+                    className="h-full w-full"
+                    src={`https://www.youtube.com/embed/${trailer.key}`}
+                    title={trailer.name || movie.title}
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
+                  />
+                ) : movie.backdrop_path ? (
+                  <img
+                    src={getBackdropUrl(movie.backdrop_path)}
+                    alt=""
+                    className="h-full w-full object-cover"
+                  />
+                ) : (
+                  <div className="flex h-full items-center justify-center text-slate-400">
+                    Trailer unavailable
+                  </div>
+                )}
+              </div>
+              <div className="flex flex-wrap items-center justify-between gap-3 border-t border-white/10 px-4 py-3 text-sm text-slate-300 sm:px-5">
+                <div>
+                  <p className="text-base font-bold text-white">{movie.title}</p>
+                  <p className="mt-0.5 text-sm text-slate-400">
+                    {trailer?.name || "Featured video"}
+                  </p>
+                </div>
+                <div className="flex w-full flex-wrap gap-2 sm:w-auto sm:justify-end">
+                  {playImdbUrl && (
+                    <a
+                      href={playImdbUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      aria-label={`Play ${movie.title}`}
+                      className="primary-action min-w-32 flex-1 gap-2 sm:flex-none"
+                    >
+                      <span
+                        aria-hidden="true"
+                        className="h-0 w-0 border-y-[6px] border-l-[9px] border-y-transparent border-l-current"
+                      />
+                      Play
+                    </a>
+                  )}
+                  {trailer && (
+                    <a
+                      href={`https://www.youtube.com/watch?v=${trailer.key}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="secondary-action min-w-32 flex-1 sm:flex-none"
+                    >
+                      Trailer
+                    </a>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            <aside className="grid gap-4 sm:grid-cols-[150px_1fr] lg:block">
+              <img
+                src={getPosterUrl(movie.poster_path)}
+                alt={movie.title}
+                className="aspect-[2/3] w-full rounded-[1.25rem] border border-white/10 object-cover shadow-[0_24px_70px_-42px_rgba(0,0,0,0.95)] sm:max-w-[180px] lg:max-w-none"
+              />
+
+              <div className="mt-0 lg:mt-4">
+                <button
+                  type="button"
+                  onClick={handleWatchlistToggle}
+                  className="primary-action w-full"
+                >
+                  {savedInWatchlist ? "Remove from Watchlist" : "Add to Watchlist"}
+                </button>
+
+                <div className="mt-4 grid grid-cols-2 gap-2">
+                  {detailFacts.map((fact) => (
+                    <div
+                      key={fact.label}
+                      className="rounded-2xl border border-white/10 bg-white/[0.045] p-3"
+                    >
+                      <p className="text-[0.68rem] font-bold uppercase tracking-[0.16em] text-slate-500">
+                        {fact.label}
+                      </p>
+                      <p className="mt-1 text-sm font-semibold text-slate-100">
+                        {fact.value}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </aside>
           </div>
 
-          <div className="flex flex-col justify-center">
-            <Link
-              to="/movies"
-              className="mb-6 inline-block w-fit rounded-lg border border-white/20 px-4 py-2 text-sm transition hover:bg-white hover:text-slate-950"
-            >
-              ← Back to Movies
-            </Link>
-
-            <h1 className="mb-4 text-4xl font-bold md:text-6xl">
+          <div className="mt-7 max-w-5xl">
+            <p className="eyebrow">Movie details</p>
+            <h1 className="mt-3 text-4xl font-black leading-[0.95] tracking-tight md:text-6xl">
               {movie.title}
             </h1>
 
             {movie.tagline && (
-              <p className="mb-4 text-xl italic text-slate-300">
+              <p className="mt-4 text-xl italic text-slate-300">
                 {movie.tagline}
               </p>
             )}
 
-            <div className="mb-6 flex flex-wrap gap-3 text-sm text-slate-300">
-              <span className="rounded-full border border-white/20 px-3 py-1">
-                {movie.release_date || "N/A"}
-              </span>
-              <span className="rounded-full border border-white/20 px-3 py-1">
-                ⭐ {movie.vote_average?.toFixed(1) || "N/A"}
-              </span>
-              <span className="rounded-full border border-white/20 px-3 py-1">
-                {movie.runtime ? `${movie.runtime} mins` : "Runtime N/A"}
-              </span>
-              <span className="rounded-full border border-white/20 px-3 py-1">
-                {movie.status || "Unknown"}
-              </span>
-            </div>
-
-            <div className="mb-6 flex flex-wrap gap-2">
+            <div className="mt-5 flex flex-wrap gap-2">
               {movie.genres?.map((genre) => (
                 <span
                   key={genre.id}
-                  className="rounded-full bg-red-600/80 px-3 py-1 text-xs font-medium"
+                  className="rounded-full border border-red-300/20 bg-red-500/18 px-3 py-1 text-xs font-bold text-red-100"
                 >
                   {genre.name}
                 </span>
               ))}
             </div>
 
-            <p className="max-w-3xl leading-8 text-slate-200">
+            <p className="mt-5 max-w-3xl leading-8 text-slate-200">
               {movie.overview || "No overview available."}
             </p>
-
-            {(trailer || playImdbUrl) && (
-              <div className="mt-8 flex flex-wrap gap-3">
-                {trailer && (
-                  <a
-                    href={`https://www.youtube.com/watch?v=${trailer.key}`}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="inline-flex items-center rounded-xl bg-red-600 px-5 py-3 font-semibold transition hover:bg-red-500"
-                  >
-                    ▶ Watch Trailer
-                  </a>
-                )}
-                {playImdbUrl && (
-                  <a
-                    href={playImdbUrl}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="inline-flex items-center rounded-xl bg-yellow-400 px-5 py-3 font-semibold text-slate-950 transition hover:bg-yellow-300"
-                  >
-                    Play IMDb
-                  </a>
-                )}
-              </div>
-            )}
-
-            <div className="mt-4">
-              <button
-                type="button"
-                onClick={handleWatchlistToggle}
-                className="inline-flex items-center rounded-xl border border-white/20 px-5 py-3 font-semibold text-white transition hover:bg-white hover:text-slate-950"
-              >
-                {savedInWatchlist ? "Remove from Watchlist" : "Add to Watchlist"}
-              </button>
-            </div>
           </div>
         </div>
       </div>
 
-      <div className="mx-auto max-w-7xl px-6 py-10">
+      <div className="page-shell">
+        {cast.length > 0 && (
+          <div className="mb-12">
+            <h2 className="mb-4 text-2xl font-bold">Top Cast</h2>
+            <div className="grid grid-cols-2 gap-4 sm:grid-cols-4 lg:grid-cols-8">
+              {cast.map((person) => (
+                <div key={person.id} className="group">
+                  <img
+                    src={
+                      person.profile_path
+                        ? `https://image.tmdb.org/t/p/w300${person.profile_path}`
+                        : "https://via.placeholder.com/300x450?text=No+Image"
+                    }
+                    alt={person.name}
+                    className="aspect-[3/4] w-full rounded-2xl border border-white/10 object-cover transition duration-300 group-hover:-translate-y-1 group-hover:border-red-200/30"
+                  />
+                  <h3 className="mt-3 line-clamp-1 text-sm font-semibold">
+                    {person.name}
+                  </h3>
+                  <p className="mt-1 line-clamp-1 text-xs text-slate-400">
+                    {person.character || "Unknown role"}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         {providerData && (
-          <div className="mb-12 rounded-2xl border border-white/10 bg-slate-900 p-6">
+          <div className="glass-panel mb-12 rounded-[1.75rem] p-6">
             <div className="mb-6 flex items-center justify-between gap-4">
               <div>
                 <h2 className="text-2xl font-bold">Where to Watch</h2>
@@ -324,7 +422,7 @@ const MovieDetails = () => {
                   href={providerData.link}
                   target="_blank"
                   rel="noreferrer"
-                  className="rounded-lg border border-white/20 px-4 py-2 text-sm transition hover:bg-white hover:text-slate-950"
+                  className="secondary-action"
                 >
                   View all providers
                 </a>
@@ -340,7 +438,7 @@ const MovieDetails = () => {
         )}
 
         {!providerData && (
-          <div className="mb-12 rounded-2xl border border-white/10 bg-slate-900 p-6">
+          <div className="glass-panel mb-12 rounded-[1.75rem] p-6">
             <h2 className="text-2xl font-bold">Where to Watch</h2>
             <p className="mt-2 text-slate-400">
               No provider data available for {region}.
@@ -348,25 +446,7 @@ const MovieDetails = () => {
           </div>
         )}
 
-        {trailer && (
-          <div className="mt-10">
-            <h2 className="mb-4 text-2xl font-bold">Trailer</h2>
-            <div className="overflow-hidden rounded-2xl border border-white/10 bg-slate-900">
-              <div className="aspect-video w-full">
-                <iframe
-                  key={trailer.key}
-                  className="h-full w-full"
-                  src={`https://www.youtube.com/embed/${trailer.key}`}
-                  title={trailer.name || movie.title}
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                  allowFullScreen
-                />
-              </div>
-            </div>
-          </div>
-        )}
-
-        <div className="mt-12 rounded-2xl border border-white/10 bg-slate-900 p-6">
+        <div className="glass-panel mt-12 rounded-[1.75rem] p-6">
           <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
             <h2 className="text-2xl font-bold">Reviews</h2>
 
@@ -396,7 +476,7 @@ const MovieDetails = () => {
                 return (
                   <div
                     key={review.id}
-                    className="rounded-2xl border border-white/10 bg-slate-950 p-5"
+                    className="rounded-2xl border border-white/10 bg-black/22 p-5"
                   >
                     <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
                       <div>
@@ -425,7 +505,7 @@ const MovieDetails = () => {
                     {review.content?.length > 260 && (
                       <button
                         onClick={() => toggleReview(review.id)}
-                        className="mt-4 text-sm font-medium text-blue-400 transition hover:text-blue-300"
+                        className="mt-4 text-sm font-bold text-red-200 transition hover:text-white"
                       >
                         {isExpanded ? "Show less" : "Read more"}
                       </button>
@@ -449,12 +529,12 @@ const MovieDetails = () => {
                 <Link
                   key={item.id}
                   to={`/movies/${item.id}`}
-                  className="overflow-hidden rounded-2xl border border-white/10 bg-slate-900 transition hover:scale-[1.02]"
+                  className="media-card"
                 >
                   <img
                     src={getPosterUrl(item.poster_path)}
                     alt={item.title}
-                    className="h-[320px] w-full object-cover"
+                    className="aspect-[2/3] w-full object-cover"
                   />
                   <div className="p-4">
                     <h3 className="line-clamp-1 font-semibold">{item.title}</h3>
@@ -476,12 +556,12 @@ const MovieDetails = () => {
                 <Link
                   key={item.id}
                   to={`/movies/${item.id}`}
-                  className="overflow-hidden rounded-2xl border border-white/10 bg-slate-900 transition hover:scale-[1.02]"
+                  className="media-card"
                 >
                   <img
                     src={getPosterUrl(item.poster_path)}
                     alt={item.title}
-                    className="h-[320px] w-full object-cover"
+                    className="aspect-[2/3] w-full object-cover"
                   />
                   <div className="p-4">
                     <h3 className="line-clamp-1 font-semibold">{item.title}</h3>
@@ -501,7 +581,7 @@ const MovieDetails = () => {
 
 const ProviderSection = ({ title, providers }) => {
   return (
-    <div className="rounded-2xl border border-white/10 bg-slate-950 p-5">
+    <div className="rounded-2xl border border-white/10 bg-black/22 p-5">
       <h3 className="mb-4 text-lg font-semibold">{title}</h3>
 
       {providers.length > 0 ? (

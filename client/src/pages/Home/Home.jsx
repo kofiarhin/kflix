@@ -168,15 +168,19 @@ const Home = () => {
   };
 
   if (loading) {
-    return <p className="p-6 text-white">Loading...</p>;
+    return (
+      <div className="page-shell">
+        <div className="h-[680px] animate-pulse rounded-[1.75rem] border border-white/10 bg-white/[0.05]" />
+      </div>
+    );
   }
 
   if (error) {
-    return <p className="p-6 text-red-400">{error}</p>;
+    return <p className="page-shell text-red-200">{error}</p>;
   }
 
   return (
-    <div className="space-y-12 pb-10">
+    <div className="page-shell space-y-14">
       {currentHeroItem && (
         <HeroSection
           currentHeroItem={currentHeroItem}

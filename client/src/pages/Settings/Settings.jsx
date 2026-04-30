@@ -199,7 +199,7 @@ const Settings = () => {
 
   if (!initialized && loading) {
     return (
-      <div className="mx-auto max-w-5xl px-4 py-6 sm:px-6">
+      <div className="page-shell">
         <div className="mb-6 space-y-3">
           <div className="h-8 w-48 animate-pulse rounded bg-slate-700/60" />
           <div className="h-4 w-full max-w-lg animate-pulse rounded bg-slate-700/50" />
@@ -219,7 +219,7 @@ const Settings = () => {
 
   if (error && !initialized) {
     return (
-      <div className="mx-auto max-w-4xl px-4 py-6 sm:px-6">
+      <div className="page-shell">
         <div className="rounded-3xl border border-red-500/30 bg-red-500/10 p-6">
           <h1 className="text-2xl font-semibold text-white">
             Couldn&apos;t load settings
@@ -243,13 +243,13 @@ const Settings = () => {
   }
 
   return (
-    <div className="mx-auto max-w-5xl px-4 py-6 pb-28 sm:px-6">
+    <div className="page-shell pb-28">
       <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div className="max-w-2xl">
-          <p className="text-xs font-semibold uppercase tracking-[0.24em] text-red-300/80">
+          <p className="eyebrow">
             Personalization
           </p>
-          <h1 className="mt-2 text-3xl font-bold tracking-tight text-white sm:text-4xl">
+          <h1 className="mt-2 text-4xl font-black tracking-tight text-white md:text-6xl">
             Tune your Kflix feed
           </h1>
           <p className="mt-3 text-sm leading-6 text-slate-300 sm:text-base">
@@ -287,7 +287,7 @@ const Settings = () => {
       )}
 
       <form onSubmit={handleSubmit} className="space-y-6">
-        <section className="rounded-3xl bg-slate-900/70 p-5 shadow-[0_0_0_1px_rgba(255,255,255,0.06)] backdrop-blur sm:p-6">
+        <section className="glass-panel rounded-[1.75rem] p-5 sm:p-6">
           <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
             <div>
               <h2 className="text-lg font-semibold text-white">
@@ -318,7 +318,7 @@ const Settings = () => {
           </div>
 
           <div className="mt-5 grid grid-cols-1 gap-3 md:grid-cols-3">
-            <div className="rounded-2xl bg-slate-950/50 p-4 ring-1 ring-inset ring-white/8">
+            <div className="rounded-2xl bg-black/22 p-4 ring-1 ring-inset ring-white/10">
               <p className="text-xs uppercase tracking-[0.2em] text-slate-500">
                 Genres
               </p>
@@ -330,7 +330,7 @@ const Settings = () => {
               </p>
             </div>
 
-            <div className="rounded-2xl bg-slate-950/50 p-4 ring-1 ring-inset ring-white/8">
+            <div className="rounded-2xl bg-black/22 p-4 ring-1 ring-inset ring-white/10">
               <p className="text-xs uppercase tracking-[0.2em] text-slate-500">
                 Content type
               </p>
@@ -342,7 +342,7 @@ const Settings = () => {
               </p>
             </div>
 
-            <div className="rounded-2xl bg-slate-950/50 p-4 ring-1 ring-inset ring-white/8">
+            <div className="rounded-2xl bg-black/22 p-4 ring-1 ring-inset ring-white/10">
               <p className="text-xs uppercase tracking-[0.2em] text-slate-500">
                 Discovery style
               </p>
@@ -356,7 +356,7 @@ const Settings = () => {
           </div>
         </section>
 
-        <section className="rounded-3xl bg-slate-900/70 p-5 shadow-[0_0_0_1px_rgba(255,255,255,0.06)] backdrop-blur sm:p-6">
+        <section className="glass-panel rounded-[1.75rem] p-5 sm:p-6">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
             <div>
               <h2 className="text-lg font-semibold text-white">
@@ -395,7 +395,7 @@ const Settings = () => {
             {GENRE_GROUPS.map((group) => (
               <div
                 key={group.key}
-                className="rounded-2xl bg-slate-950/35 p-4 ring-1 ring-inset ring-white/6"
+                className="rounded-2xl bg-black/20 p-4 ring-1 ring-inset ring-white/10"
               >
                 <div className="mb-3">
                   <h3 className="text-sm font-semibold text-white">
@@ -438,7 +438,7 @@ const Settings = () => {
         </section>
 
         <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-          <section className="rounded-3xl bg-slate-900/70 p-5 shadow-[0_0_0_1px_rgba(255,255,255,0.06)] backdrop-blur sm:p-6">
+          <section className="glass-panel rounded-[1.75rem] p-5 sm:p-6">
             <div className="mb-4">
               <h2 className="text-lg font-semibold text-white">
                 Content preference
@@ -489,7 +489,7 @@ const Settings = () => {
             </div>
           </section>
 
-          <section className="rounded-3xl bg-slate-900/70 p-5 shadow-[0_0_0_1px_rgba(255,255,255,0.06)] backdrop-blur sm:p-6">
+          <section className="glass-panel rounded-[1.75rem] p-5 sm:p-6">
             <div className="mb-4">
               <h2 className="text-lg font-semibold text-white">
                 Recommendation style
@@ -542,7 +542,7 @@ const Settings = () => {
         </div>
 
         {hasUnsavedChanges && (
-          <div className="fixed inset-x-0 bottom-0 z-20 border-t border-white/10 bg-slate-950/90 px-4 py-4 backdrop-blur sm:px-6">
+          <div className="fixed inset-x-0 bottom-0 z-20 border-t border-white/10 bg-[#0c0d10]/90 px-4 py-4 backdrop-blur sm:px-6">
             <div className="mx-auto flex max-w-5xl flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <p className="text-sm font-medium text-white">
@@ -558,7 +558,7 @@ const Settings = () => {
                   type="button"
                   onClick={handleDiscard}
                   disabled={saving || loading || !hasUnsavedChanges}
-                  className="inline-flex rounded-xl bg-white/[0.04] px-4 py-2.5 text-sm font-semibold text-slate-200 ring-1 ring-inset ring-white/10 transition hover:bg-white/[0.07] hover:ring-white/20 disabled:cursor-not-allowed disabled:opacity-50"
+                  className="secondary-action disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   Discard
                 </button>
@@ -566,7 +566,7 @@ const Settings = () => {
                 <button
                   type="submit"
                   disabled={saving || loading || !hasUnsavedChanges}
-                  className="inline-flex rounded-xl bg-red-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-red-500 disabled:cursor-not-allowed disabled:opacity-50"
+                  className="primary-action disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   {saving ? "Saving..." : "Save preferences"}
                 </button>

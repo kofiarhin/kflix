@@ -17,10 +17,13 @@ const Watchlist = () => {
   const { watchlist, loading, error, removeFromWatchlist } = useWatchlist();
 
   return (
-    <section className="mx-auto max-w-7xl px-6 py-10">
-      <div className="mb-8 flex items-center justify-between gap-3">
-        <h1 className="text-3xl font-bold">My Watchlist</h1>
-        <span className="rounded-full border border-white/20 px-3 py-1 text-sm text-slate-300">
+    <section className="page-shell">
+      <div className="mb-8 flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
+        <div>
+          <p className="eyebrow mb-3">Saved library</p>
+          <h1 className="text-4xl font-black tracking-tight md:text-6xl">My Watchlist</h1>
+        </div>
+        <span className="w-fit rounded-full border border-white/15 bg-white/[0.06] px-4 py-2 text-sm font-semibold text-slate-200">
           {watchlist.length} saved
         </span>
       </div>
@@ -28,27 +31,27 @@ const Watchlist = () => {
       {loading && <p className="text-slate-300">Loading watchlist...</p>}
 
       {!loading && error && (
-        <p className="rounded-lg border border-red-500/30 bg-red-500/10 p-4 text-red-300">
+        <p className="rounded-2xl border border-red-500/30 bg-red-500/10 p-4 text-red-200">
           {error}
         </p>
       )}
 
       {!loading && !error && watchlist.length === 0 && (
-        <div className="rounded-2xl border border-white/10 bg-slate-900 p-8 text-center">
-          <h2 className="text-2xl font-semibold">Your watchlist is empty</h2>
-          <p className="mt-3 text-slate-400">
+        <div className="glass-panel rounded-[1.75rem] p-8 text-center">
+          <h2 className="text-2xl font-black tracking-tight">Your watchlist is empty</h2>
+          <p className="mx-auto mt-3 max-w-md text-slate-400">
             Save movies and series from detail pages to see them here.
           </p>
           <div className="mt-6 flex justify-center gap-3">
             <Link
               to="/movies"
-              className="rounded-lg bg-red-600 px-4 py-2 font-semibold transition hover:bg-red-500"
+              className="primary-action"
             >
               Browse Movies
             </Link>
             <Link
               to="/series"
-              className="rounded-lg border border-white/20 px-4 py-2 font-semibold transition hover:bg-white hover:text-slate-950"
+              className="secondary-action"
             >
               Browse Series
             </Link>
@@ -57,31 +60,31 @@ const Watchlist = () => {
       )}
 
       {!loading && watchlist.length > 0 && (
-        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {watchlist.map((item) => (
             <article
               key={`${item.mediaType}-${item.tmdbId}`}
-              className="overflow-hidden rounded-2xl border border-white/10 bg-slate-900"
+              className="media-card"
             >
               <Link to={detailsPath(item)}>
                 <img
                   src={posterUrl(item.posterPath)}
                   alt={item.title}
-                  className="h-[380px] w-full object-cover"
+                  className="aspect-[2/3] w-full object-cover"
                 />
               </Link>
 
               <div className="p-4">
                 <div className="mb-3 flex items-center justify-between gap-3">
-                  <h2 className="line-clamp-1 text-lg font-semibold">{item.title}</h2>
-                  <span className="rounded-full border border-white/20 px-2 py-1 text-xs uppercase text-slate-300">
+                  <h2 className="line-clamp-1 text-lg font-bold tracking-tight">{item.title}</h2>
+                  <span className="rounded-full border border-white/15 bg-white/[0.06] px-2 py-1 text-xs uppercase text-slate-300">
                     {item.mediaType}
                   </span>
                 </div>
 
                 <div className="mb-3 flex flex-wrap items-center gap-3 text-sm text-slate-400">
                   <span>{item.releaseDate || "N/A"}</span>
-                  <span>⭐ {item.voteAverage ? item.voteAverage.toFixed(1) : "N/A"}</span>
+                  <span>{item.voteAverage ? item.voteAverage.toFixed(1) : "N/A"}</span>
                 </div>
 
                 <p className="line-clamp-3 text-sm leading-6 text-slate-300">
@@ -91,14 +94,14 @@ const Watchlist = () => {
                 <div className="mt-4 flex items-center justify-between gap-3">
                   <Link
                     to={detailsPath(item)}
-                    className="text-sm font-medium text-blue-400 transition hover:text-blue-300"
+                    className="text-sm font-bold text-red-200 transition hover:text-white"
                   >
                     View details
                   </Link>
                   <button
                     type="button"
                     onClick={() => removeFromWatchlist(item.tmdbId, item.mediaType)}
-                    className="rounded-lg border border-red-500/40 px-3 py-2 text-sm font-medium text-red-300 transition hover:bg-red-500/20"
+                    className="rounded-full border border-red-500/35 px-3 py-2 text-sm font-bold text-red-200 transition hover:bg-red-500/15"
                   >
                     Remove
                   </button>
