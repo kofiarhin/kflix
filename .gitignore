@@ -18,12 +18,29 @@ dist/
 
 # logs / runtime output
 *.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
 output/
 .playwright-cli/
+
+# test / cache output
+coverage/
+client/coverage/
+.vite/
+client/.vite/
+.cache/
+client/.cache/
 
 # uploads / local media
 server/uploads/
 storage/
+
+# temporary files
+tmp/
+temp/
+*.tmp
 
 # local agent/editor settings
 .claude/settings.local.json
