@@ -1,53 +1,88 @@
 import { Link } from "react-router-dom";
 
-const ContentSection = ({ title, items, type, getPosterUrl, viewAllLink }) => {
+const getItemTitle = (item, type) => (type === "movie" ? item.title : item.name);
+
+const getItemDate = (item, type) =>
+  type === "movie" ? item.release_date || "N/A" : item.first_air_date || "N/A";
+
+const ContentSection = ({
+  eyebrow = "Curated shelf",
+  title,
+  items,
+  type,
+  getPosterUrl,
+  getBackdropUrl,
+  viewAllLink,
+}) => {
   return (
-    <section className="px-1">
-      <div className="mb-5 flex items-end justify-between gap-4">
+    <section className="storefront-shelf">
+      <div className="storefront-shelf-header">
         <div>
-          <p className="eyebrow mb-2">Curated shelf</p>
-          <h2 className="text-2xl font-black tracking-tight text-white">{title}</h2>
+          <p className="eyebrow mb-2">{eyebrow}</p>
+          <h2>{title}</h2>
         </div>
 
         <Link
           to={viewAllLink}
-          className="secondary-action px-4 py-2"
+          className="storefront-view-all"
         >
-          View All
+          View all
         </Link>
       </div>
 
-      <div className="grid grid-cols-2 gap-4 md:grid-cols-3 lg:gap-5 xl:grid-cols-6">
-        {items.map((item) => (
-          <Link
-            key={item.id}
-            to={type === "movie" ? `/movies/${item.id}` : `/series/${item.id}`}
-            className="media-card group"
-          >
-            <img
-              src={getPosterUrl(item.poster_path)}
-              alt={type === "movie" ? item.title : item.name}
-              className="aspect-[2/3] w-full object-cover"
-            />
+      {items.length === 0 ? (
+        <div className="storefront-empty">
+          <h3>No titles available</h3>
+          <p>This shelf will fill in when the catalog returns more results.</p>
+        </div>
+      ) : (
+        <div className="storefront-rail" aria-label={title}>
+          {items.map((item, index) => {
+            const detailRoute = type === "movie" ? `/movies/${item.id}` : `/series/${item.id}`;
+            const titleText = getItemTitle(item, type);
+            const releaseDate = getItemDate(item, type);
+            const rating = Number(item.vote_average) || 0;
+            const backdropUrl = getBackdropUrl
+              ? getBackdropUrl(item.backdrop_path)
+              : getPosterUrl(item.poster_path);
 
-            <div className="p-4">
-              <h3 className="line-clamp-1 font-bold tracking-tight text-white">
-                {type === "movie" ? item.title : item.name}
-              </h3>
+            return (
+              <Link
+                key={item.id}
+                to={detailRoute}
+                className="storefront-card"
+                style={{ "--index": index }}
+              >
+                <div className="storefront-card-media">
+                  <img
+                    src={backdropUrl}
+                    alt=""
+                    className="storefront-card-backdrop"
+                    aria-hidden="true"
+                  />
+                  <img
+                    src={getPosterUrl(item.poster_path)}
+                    alt={titleText}
+                    className="storefront-card-poster"
+                  />
+                  <span className="storefront-rating">
+                    {rating ? rating.toFixed(1) : "N/A"}
+                  </span>
+                </div>
 
-              <p className="mt-2 text-xs font-semibold uppercase tracking-[0.16em] text-slate-500">
-                {type === "movie"
-                  ? item.release_date || "N/A"
-                  : item.first_air_date || "N/A"}
-              </p>
+                <div className="storefront-card-copy">
+                  <h3>{titleText}</h3>
+                  <p className="storefront-card-meta">{releaseDate}</p>
+                  <p className="storefront-card-overview">
+                    {item.overview || "No description available."}
+                  </p>
+                </div>
+              </Link>
+            );
+          })}
+        </div>
+      )}
 
-              <p className="mt-2 line-clamp-3 text-sm leading-6 text-slate-300">
-                {item.overview || "No description available."}
-              </p>
-            </div>
-          </Link>
-        ))}
-      </div>
     </section>
   );
 };

@@ -1,9 +1,21 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import HeroSection from "../../components/home/HeroSection";
 import ContentSection from "../../components/home/ContentSection";
 import { GENRES } from "../../constants/genres";
 
 const AUTO_PLAY_INTERVAL = 5000;
+
+const storefrontTabs = [
+  "All",
+  "Movies",
+  "Series",
+  "Action",
+  "Drama",
+  "Comedy",
+  "Sci-Fi",
+  "Family",
+];
 
 const Home = () => {
   const [popularMovies, setPopularMovies] = useState([]);
@@ -169,8 +181,18 @@ const Home = () => {
 
   if (loading) {
     return (
-      <div className="page-shell">
+      <div className="page-shell home-storefront">
         <div className="h-[680px] animate-pulse rounded-[1.75rem] border border-white/10 bg-white/[0.05]" />
+        <div className="mt-10 flex gap-3 overflow-hidden">
+          {storefrontTabs.map((tab) => (
+            <div key={tab} className="h-10 w-24 shrink-0 animate-pulse rounded-full bg-white/[0.08]" />
+          ))}
+        </div>
+        <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {Array.from({ length: 4 }).map((_, index) => (
+            <div key={index} className="h-44 animate-pulse rounded-2xl bg-white/[0.06]" />
+          ))}
+        </div>
       </div>
     );
   }
@@ -180,7 +202,7 @@ const Home = () => {
   }
 
   return (
-    <div className="page-shell space-y-14">
+    <div className="page-shell home-storefront space-y-10">
       {currentHeroItem && (
         <HeroSection
           currentHeroItem={currentHeroItem}
@@ -192,35 +214,99 @@ const Home = () => {
         />
       )}
 
+      <section className="storefront-channel" aria-label="Browse channels">
+        <div className="storefront-tabs" role="list" aria-label="Featured categories">
+          {storefrontTabs.map((tab, index) => (
+            <button
+              key={tab}
+              type="button"
+              className={`storefront-tab ${index === 0 ? "storefront-tab-active" : ""}`}
+            >
+              {tab}
+            </button>
+          ))}
+        </div>
+
+        <div className="storefront-feature-grid">
+          {trendingMovies.slice(0, 2).map((item, index) => (
+            <Link
+              key={`movie-feature-${item.id}`}
+              to={`/movies/${item.id}`}
+              className={`storefront-feature-tile ${index === 0 ? "storefront-feature-tile-wide" : ""}`}
+            >
+              <img
+                src={getBackdropUrl(item.backdrop_path)}
+                alt=""
+                className="storefront-feature-backdrop"
+                aria-hidden="true"
+              />
+              <div className="storefront-feature-copy">
+                <span>Trending Movie</span>
+                <strong>{item.title}</strong>
+                <p>{item.overview || "Explore what audiences are watching this week."}</p>
+              </div>
+            </Link>
+          ))}
+
+          {trendingSeries.slice(0, 2).map((item) => (
+            <Link
+              key={`series-feature-${item.id}`}
+              to={`/series/${item.id}`}
+              className="storefront-feature-tile"
+            >
+              <img
+                src={getBackdropUrl(item.backdrop_path)}
+                alt=""
+                className="storefront-feature-backdrop"
+                aria-hidden="true"
+              />
+              <div className="storefront-feature-copy">
+                <span>Series Spotlight</span>
+                <strong>{item.name}</strong>
+                <p>{item.overview || "Catch up on episodes and new audience favorites."}</p>
+              </div>
+            </Link>
+          ))}
+        </div>
+      </section>
+
       <ContentSection
-        title="Popular Movies"
+        eyebrow="Movies"
+        title="Popular right now"
         items={popularMovies}
         type="movie"
         getPosterUrl={getPosterUrl}
+        getBackdropUrl={getBackdropUrl}
         viewAllLink="/movies"
       />
 
       <ContentSection
-        title="Trending Movies"
+        eyebrow="New this week"
+        title="Trending movies"
         items={trendingMovies}
         type="movie"
         getPosterUrl={getPosterUrl}
+        getBackdropUrl={getBackdropUrl}
         viewAllLink="/movies"
       />
 
       <ContentSection
-        title="Popular Series"
+        eyebrow="Series"
+        title="Popular shows"
         items={popularSeries}
         type="series"
         getPosterUrl={getPosterUrl}
+        getBackdropUrl={getBackdropUrl}
         viewAllLink="/series"
       />
 
       <ContentSection
-        title="Trending Series"
+        eyebrow="Binge picks"
+        title="Trending series"
         items={trendingSeries}
         type="series"
         getPosterUrl={getPosterUrl}
+        getBackdropUrl={getBackdropUrl}
         viewAllLink="/series"
       />
     </div>
