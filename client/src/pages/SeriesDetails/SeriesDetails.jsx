@@ -1,12 +1,28 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import { useAuth } from "../../context/AuthContext";
 import RecentlyViewedSection from "../../components/RecentlyViewed/RecentlyViewedSection";
+import { useAuth } from "../../context/AuthContext";
 import { useRecentlyViewed } from "../../context/RecentlyViewedContext";
 import { useWatchlist } from "../../context/WatchlistContext";
 
 const RECENTLY_VIEWED_RECORD_DEDUP_WINDOW_MS = 2000;
 const recentlyViewedRecordTimestamps = new Map();
+
+const tmdbHeaders = {
+  Authorization: `Bearer ${import.meta.env.VITE_TMDB_TOKEN}`,
+  accept: "application/json",
+};
+
+const getPosterUrl = (posterPath) =>
+  posterPath
+    ? `https://image.tmdb.org/t/p/w500${posterPath}`
+    : "https://via.placeholder.com/500x750?text=No+Image";
+
+const getBackdropUrl = (backdropPath) =>
+  backdropPath ? `https://image.tmdb.org/t/p/original${backdropPath}` : "";
+
+const getStillUrl = (stillPath) =>
+  stillPath ? `https://image.tmdb.org/t/p/w500${stillPath}` : "";
 
 const SeriesDetails = () => {
   const { id } = useParams();
@@ -15,60 +31,38 @@ const SeriesDetails = () => {
   const { addToWatchlist, removeFromWatchlist, isInWatchlist } = useWatchlist();
   const { recordRecentlyViewed } = useRecentlyViewed();
   const [series, setSeries] = useState(null);
-  const [expandedReviews, setExpandedReviews] = useState({});
+  const [selectedSeason, setSelectedSeason] = useState(null);
+  const [seasonDetails, setSeasonDetails] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [episodesLoading, setEpisodesLoading] = useState(false);
   const [error, setError] = useState("");
+  const [episodesError, setEpisodesError] = useState("");
   const recordedKeyRef = useRef("");
 
   const region =
     (navigator.language || "en-US").split("-")[1]?.toUpperCase() || "US";
 
-  const getPosterUrl = (posterPath) => {
-    return posterPath
-      ? `https://image.tmdb.org/t/p/w500${posterPath}`
-      : "https://via.placeholder.com/500x750?text=No+Image";
-  };
-
-  const getBackdropUrl = (backdropPath) => {
-    return backdropPath
-      ? `https://image.tmdb.org/t/p/original${backdropPath}`
-      : "";
-  };
-
-  const truncateText = (text, limit = 260) => {
-    if (!text) return "";
-    return text.length > limit ? `${text.slice(0, limit)}...` : text;
-  };
-
-  const toggleReview = (reviewId) => {
-    setExpandedReviews((prev) => ({
-      ...prev,
-      [reviewId]: !prev[reviewId],
-    }));
-  };
   useEffect(() => {
     const fetchSeriesDetails = async () => {
       try {
         setLoading(true);
         setError("");
+        setSeasonDetails(null);
 
         const res = await fetch(
           `https://api.themoviedb.org/3/tv/${id}?language=en-US&append_to_response=videos,similar,recommendations,reviews,watch/providers,credits,content_ratings,external_ids`,
-          {
-            method: "GET",
-            headers: {
-              Authorization: `Bearer ${import.meta.env.VITE_TMDB_TOKEN}`,
-              accept: "application/json",
-            },
-          },
+          { method: "GET", headers: tmdbHeaders },
         );
 
-        if (!res.ok) {
-          throw new Error("Failed to fetch series details");
-        }
+        if (!res.ok) throw new Error("Failed to fetch series details");
 
         const data = await res.json();
+        const firstRealSeason = data.seasons?.find(
+          (season) => season.season_number > 0 && season.episode_count > 0,
+        );
+
         setSeries(data);
+        setSelectedSeason(firstRealSeason?.season_number ?? data.seasons?.[0]?.season_number ?? 1);
       } catch (err) {
         setError(err.message || "Something went wrong");
       } finally {
@@ -80,17 +74,40 @@ const SeriesDetails = () => {
   }, [id]);
 
   useEffect(() => {
-    if (!isAuthenticated || !series?.id || !series.name) {
-      return;
-    }
+    const fetchSeasonDetails = async () => {
+      if (!id || selectedSeason === null || selectedSeason === undefined) return;
+
+      try {
+        setEpisodesLoading(true);
+        setEpisodesError("");
+
+        const res = await fetch(
+          `https://api.themoviedb.org/3/tv/${id}/season/${selectedSeason}?language=en-US`,
+          { headers: tmdbHeaders },
+        );
+
+        if (!res.ok) throw new Error("Failed to fetch season episodes");
+
+        const data = await res.json();
+        setSeasonDetails(data);
+      } catch (err) {
+        setEpisodesError(err.message || "Failed to load episodes");
+      } finally {
+        setEpisodesLoading(false);
+      }
+    };
+
+    fetchSeasonDetails();
+  }, [id, selectedSeason]);
+
+  useEffect(() => {
+    if (!isAuthenticated || !series?.id || !series.name) return;
 
     const itemKey = `tv-${series.id}`;
     const now = Date.now();
     const lastRecordedAt = recentlyViewedRecordTimestamps.get(itemKey) || 0;
 
-    if (recordedKeyRef.current === itemKey) {
-      return;
-    }
+    if (recordedKeyRef.current === itemKey) return;
 
     if (now - lastRecordedAt < RECENTLY_VIEWED_RECORD_DEDUP_WINDOW_MS) {
       recordedKeyRef.current = itemKey;
@@ -118,10 +135,9 @@ const SeriesDetails = () => {
     series?.videos?.results?.find(
       (video) => video.site === "YouTube" && video.type === "Trailer",
     ) || series?.videos?.results?.find((video) => video.site === "YouTube");
+
   const imdbId = series?.external_ids?.imdb_id;
-  const playImdbUrl = imdbId
-    ? `https://www.playimdb.com/title/${imdbId}`
-    : "";
+  const playImdbUrl = imdbId ? `https://www.playimdb.com/title/${imdbId}` : "";
 
   const similarSeries = useMemo(
     () => series?.similar?.results?.slice(0, 8) || [],
@@ -130,10 +146,6 @@ const SeriesDetails = () => {
   const recommendedSeries = useMemo(
     () => series?.recommendations?.results?.slice(0, 8) || [],
     [series?.recommendations?.results],
-  );
-  const reviews = useMemo(
-    () => series?.reviews?.results?.slice(0, 6) || [],
-    [series?.reviews?.results],
   );
   const cast = useMemo(
     () => series?.credits?.cast?.slice(0, 8) || [],
@@ -145,10 +157,6 @@ const SeriesDetails = () => {
     series?.["watch/providers"]?.results?.US ||
     null;
 
-  const streamProviders = providerData?.flatrate || [];
-  const rentProviders = providerData?.rent || [];
-  const buyProviders = providerData?.buy || [];
-
   const contentRating =
     series?.content_ratings?.results?.find((item) => item.iso_3166_1 === region)
       ?.rating ||
@@ -159,44 +167,10 @@ const SeriesDetails = () => {
   const creators =
     series?.created_by?.map((person) => person.name).join(", ") || "N/A";
 
-  const reviewStats = useMemo(() => {
-    const ratedReviews = reviews.filter(
-      (review) =>
-        typeof review.author_details?.rating === "number" &&
-        !Number.isNaN(review.author_details.rating),
-    );
-
-    if (!ratedReviews.length) {
-      return {
-        average: null,
-        label: "No scored reviews",
-      };
-    }
-
-    const average =
-      ratedReviews.reduce(
-        (sum, review) => sum + review.author_details.rating,
-        0,
-      ) / ratedReviews.length;
-
-    let label = "Mixed";
-    if (average >= 7.5) label = "Very Positive";
-    else if (average >= 6) label = "Positive";
-    else if (average >= 4) label = "Mixed";
-    else label = "Negative";
-
-    return {
-      average,
-      label,
-    };
-  }, [reviews]);
-
   const savedInWatchlist = series ? isInWatchlist(series.id, "tv") : false;
 
   const handleWatchlistToggle = async () => {
-    if (!series) {
-      return;
-    }
+    if (!series) return;
 
     if (!isAuthenticated) {
       navigate("/login");
@@ -222,7 +196,7 @@ const SeriesDetails = () => {
 
   if (loading) {
     return (
-      <section className="page-shell">
+      <section className="page-shell pt-28">
         <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_340px]">
           <div className="aspect-video animate-pulse rounded-[1.5rem] bg-white/10" />
           <div className="space-y-4">
@@ -234,20 +208,17 @@ const SeriesDetails = () => {
     );
   }
 
-  if (error) return <p className="page-shell text-red-200">{error}</p>;
-  if (!series) return <p className="page-shell text-white">Series not found.</p>;
+  if (error) return <p className="page-shell pt-28 text-red-200">{error}</p>;
+  if (!series) return <p className="page-shell pt-28 text-white">Series not found.</p>;
 
   const detailFacts = [
     { label: "First aired", value: series.first_air_date || "N/A" },
-    { label: "Rating", value: series.vote_average ? `${series.vote_average.toFixed(1)}/10` : "N/A" },
     {
-      label: "Seasons",
-      value: series.number_of_seasons ? `${series.number_of_seasons}` : "N/A",
+      label: "Rating",
+      value: series.vote_average ? `${series.vote_average.toFixed(1)}/10` : "N/A",
     },
-    {
-      label: "Episodes",
-      value: series.number_of_episodes ? `${series.number_of_episodes}` : "N/A",
-    },
+    { label: "Seasons", value: series.number_of_seasons || "N/A" },
+    { label: "Episodes", value: series.number_of_episodes || "N/A" },
     { label: "Status", value: series.status || "Unknown" },
     { label: "Rated", value: contentRating },
   ];
@@ -352,17 +323,7 @@ const SeriesDetails = () => {
 
                 <div className="mt-4 grid grid-cols-2 gap-2">
                   {detailFacts.map((fact) => (
-                    <div
-                      key={fact.label}
-                      className="rounded-2xl border border-white/10 bg-white/[0.045] p-3"
-                    >
-                      <p className="text-[0.68rem] font-bold uppercase tracking-[0.16em] text-slate-500">
-                        {fact.label}
-                      </p>
-                      <p className="mt-1 text-sm font-semibold text-slate-100">
-                        {fact.value}
-                      </p>
-                    </div>
+                    <Fact key={fact.label} label={fact.label} value={fact.value} />
                   ))}
                 </div>
               </div>
@@ -376,9 +337,7 @@ const SeriesDetails = () => {
             </h1>
 
             {series.tagline && (
-              <p className="mt-4 text-xl italic text-slate-300">
-                {series.tagline}
-              </p>
+              <p className="mt-4 text-xl italic text-slate-300">{series.tagline}</p>
             )}
 
             <div className="mt-5 flex flex-wrap gap-2">
@@ -400,70 +359,132 @@ const SeriesDetails = () => {
       </div>
 
       <div className="page-shell">
-        <div className="grid gap-6 md:grid-cols-2">
+        <div className="glass-panel rounded-[1.75rem] p-6">
+          <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
+            <div>
+              <p className="eyebrow">Episodes</p>
+              <h2 className="mt-2 text-2xl font-bold">
+                {seasonDetails?.name || `Season ${selectedSeason}`}
+              </h2>
+            </div>
+            <p className="text-sm text-slate-400">
+              {seasonDetails?.episodes?.length || 0} episodes
+            </p>
+          </div>
+
+          <div className="mb-6 flex gap-2 overflow-x-auto pb-2">
+            {series.seasons
+              ?.filter((season) => season.episode_count > 0)
+              .map((season) => (
+                <button
+                  key={season.id}
+                  type="button"
+                  onClick={() => setSelectedSeason(season.season_number)}
+                  className={`shrink-0 rounded-full border px-4 py-2 text-sm font-bold transition ${
+                    selectedSeason === season.season_number
+                      ? "border-red-300/40 bg-red-500/25 text-white"
+                      : "border-white/10 bg-white/[0.045] text-slate-300 hover:border-white/25 hover:text-white"
+                  }`}
+                >
+                  {season.season_number === 0 ? "Specials" : `Season ${season.season_number}`}
+                </button>
+              ))}
+          </div>
+
+          {episodesLoading ? (
+            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+              {Array.from({ length: 6 }).map((_, index) => (
+                <div
+                  key={index}
+                  className="h-72 animate-pulse rounded-2xl bg-white/10"
+                />
+              ))}
+            </div>
+          ) : episodesError ? (
+            <p className="text-red-200">{episodesError}</p>
+          ) : seasonDetails?.episodes?.length ? (
+            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+              {seasonDetails.episodes.map((episode) => (
+                <Link
+                  key={episode.id}
+                  to={`/series/${id}/season/${selectedSeason}/episode/${episode.episode_number}`}
+                  className="group overflow-hidden rounded-2xl border border-white/10 bg-black/22 transition duration-300 hover:-translate-y-1 hover:border-red-200/30"
+                >
+                  <div className="aspect-video bg-[#15161b]">
+                    {episode.still_path ? (
+                      <img
+                        src={getStillUrl(episode.still_path)}
+                        alt={episode.name}
+                        className="h-full w-full object-cover transition duration-300 group-hover:scale-105"
+                      />
+                    ) : (
+                      <div className="flex h-full items-center justify-center text-sm text-slate-500">
+                        No Image
+                      </div>
+                    )}
+                  </div>
+                  <div className="p-4">
+                    <div className="mb-2 flex items-center justify-between gap-3 text-xs text-slate-400">
+                      <span>Episode {episode.episode_number}</span>
+                      <span>{episode.air_date || "N/A"}</span>
+                    </div>
+                    <h3 className="line-clamp-2 font-bold text-white">
+                      {episode.name}
+                    </h3>
+                    <p className="mt-2 line-clamp-3 text-sm leading-6 text-slate-400">
+                      {episode.overview || "No overview available."}
+                    </p>
+                    <div className="mt-4 flex items-center justify-between text-sm">
+                      <span className="rounded-full bg-white/10 px-3 py-1 text-slate-300">
+                        {episode.runtime ? `${episode.runtime} min` : "Runtime N/A"}
+                      </span>
+                      <span className="font-bold text-red-100">Open</span>
+                    </div>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          ) : (
+            <p className="text-slate-400">No episodes available for this season.</p>
+          )}
+        </div>
+
+        <div className="mt-12 grid gap-6 md:grid-cols-2">
           <div className="glass-panel rounded-[1.75rem] p-6">
             <h2 className="mb-4 text-xl font-semibold">Series Info</h2>
             <div className="space-y-3 text-sm text-slate-300">
-              <p>
-                <span className="font-semibold text-white">Original Name:</span>{" "}
-                {series.original_name || "N/A"}
-              </p>
-              <p>
-                <span className="font-semibold text-white">Created By:</span>{" "}
-                {creators}
-              </p>
-              <p>
-                <span className="font-semibold text-white">Language:</span>{" "}
-                {series.original_language?.toUpperCase() || "N/A"}
-              </p>
-              <p>
-                <span className="font-semibold text-white">Popularity:</span>{" "}
-                {series.popularity || "N/A"}
-              </p>
-              <p>
-                <span className="font-semibold text-white">Vote Count:</span>{" "}
-                {series.vote_count || "N/A"}
-              </p>
-              <p>
-                <span className="font-semibold text-white">Last Air Date:</span>{" "}
-                {series.last_air_date || "N/A"}
-              </p>
-              <p>
-                <span className="font-semibold text-white">In Production:</span>{" "}
-                {series.in_production ? "Yes" : "No"}
-              </p>
+              <Info label="Original Name" value={series.original_name || "N/A"} />
+              <Info label="Created By" value={creators} />
+              <Info
+                label="Language"
+                value={series.original_language?.toUpperCase() || "N/A"}
+              />
+              <Info label="Popularity" value={series.popularity || "N/A"} />
+              <Info label="Vote Count" value={series.vote_count || "N/A"} />
+              <Info label="Last Air Date" value={series.last_air_date || "N/A"} />
+              <Info label="In Production" value={series.in_production ? "Yes" : "No"} />
             </div>
           </div>
 
           <div className="glass-panel rounded-[1.75rem] p-6">
             <h2 className="mb-4 text-xl font-semibold">Network & Production</h2>
             <div className="space-y-3 text-sm text-slate-300">
-              <p>
-                <span className="font-semibold text-white">Networks:</span>{" "}
-                {series.networks?.length
-                  ? series.networks.map((network) => network.name).join(", ")
-                  : "Not available"}
-              </p>
-              <p>
-                <span className="font-semibold text-white">
-                  Production Companies:
-                </span>{" "}
-                {series.production_companies?.length
-                  ? series.production_companies
-                      .map((company) => company.name)
-                      .join(", ")
-                  : "Not available"}
-              </p>
-              <p>
-                <span className="font-semibold text-white">
-                  Production Countries:
-                </span>{" "}
-                {series.production_countries?.length
-                  ? series.production_countries
-                      .map((country) => country.name)
-                      .join(", ")
-                  : "Not available"}
-              </p>
+              <Info
+                label="Networks"
+                value={
+                  series.networks?.length
+                    ? series.networks.map((network) => network.name).join(", ")
+                    : "Not available"
+                }
+              />
+              <Info
+                label="Production Companies"
+                value={
+                  series.production_companies?.length
+                    ? series.production_companies.map((company) => company.name).join(", ")
+                    : "Not available"
+                }
+              />
               <p>
                 <span className="font-semibold text-white">Homepage:</span>{" "}
                 {series.homepage ? (
@@ -517,7 +538,6 @@ const SeriesDetails = () => {
                 <h2 className="text-2xl font-bold">Where to Watch</h2>
                 <p className="mt-1 text-sm text-slate-400">Region: {region}</p>
               </div>
-
               {providerData.link && (
                 <a
                   href={providerData.link}
@@ -529,172 +549,56 @@ const SeriesDetails = () => {
                 </a>
               )}
             </div>
-
-            <div className="grid gap-6 md:grid-cols-3">
-              <ProviderSection title="Stream" providers={streamProviders} />
-              <ProviderSection title="Rent" providers={rentProviders} />
-              <ProviderSection title="Buy" providers={buyProviders} />
-            </div>
           </div>
         )}
-
-        <div className="glass-panel mt-12 rounded-[1.75rem] p-6">
-          <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
-            <h2 className="text-2xl font-bold">Reviews</h2>
-
-            <div className="rounded-full border border-white/20 px-4 py-2 text-sm">
-              {reviewStats.average !== null ? (
-                <span>
-                  Sentiment:{" "}
-                  <span className="font-semibold text-emerald-400">
-                    {reviewStats.label}
-                  </span>{" "}
-                  · Avg {reviewStats.average.toFixed(1)}/10
-                </span>
-              ) : (
-                <span className="text-slate-400">{reviewStats.label}</span>
-              )}
-            </div>
-          </div>
-
-          {reviews.length > 0 ? (
-            <div className="grid gap-6">
-              {reviews.map((review) => {
-                const isExpanded = expandedReviews[review.id];
-                const content = isExpanded
-                  ? review.content
-                  : truncateText(review.content);
-
-                return (
-                  <div
-                    key={review.id}
-                    className="rounded-2xl border border-white/10 bg-black/22 p-5"
-                  >
-                    <div className="mb-3 flex flex-wrap items-center justify-between gap-3">
-                      <div>
-                        <h3 className="font-semibold">
-                          {review.author || "Anonymous"}
-                        </h3>
-                        <p className="text-sm text-slate-400">
-                          {review.author_details?.username || "Unknown user"}
-                        </p>
-                      </div>
-
-                      <div className="flex items-center gap-3">
-                        {typeof review.author_details?.rating === "number" && (
-                          <span className="rounded-full bg-amber-500/20 px-3 py-1 text-sm text-amber-300">
-                            {review.author_details.rating}/10
-                          </span>
-                        )}
-                        <span className="text-sm text-slate-400">
-                          {new Date(review.created_at).toLocaleDateString()}
-                        </span>
-                      </div>
-                    </div>
-
-                    <p className="leading-7 text-slate-300">{content}</p>
-
-                    {review.content?.length > 260 && (
-                      <button
-                        onClick={() => toggleReview(review.id)}
-                        className="mt-4 text-sm font-bold text-red-200 transition hover:text-white"
-                      >
-                        {isExpanded ? "Show less" : "Read more"}
-                      </button>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          ) : (
-            <p className="text-slate-400">No reviews available.</p>
-          )}
-        </div>
 
         <RecentlyViewedSection />
 
-        {recommendedSeries.length > 0 && (
-          <div className="mt-12">
-            <h2 className="mb-4 text-2xl font-bold">Recommended Series</h2>
-            <div className="grid grid-cols-2 gap-6 sm:grid-cols-3 lg:grid-cols-4">
-              {recommendedSeries.map((item) => (
-                <Link
-                  key={item.id}
-                  to={`/series/${item.id}`}
-                  className="media-card"
-                >
-                  <img
-                    src={getPosterUrl(item.poster_path)}
-                    alt={item.name}
-                    className="aspect-[2/3] w-full object-cover"
-                  />
-                  <div className="p-4">
-                    <h3 className="line-clamp-1 font-semibold">{item.name}</h3>
-                    <p className="mt-2 text-sm text-slate-400">
-                      {item.first_air_date || "N/A"}
-                    </p>
-                  </div>
-                </Link>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {similarSeries.length > 0 && (
-          <div className="mt-12">
-            <h2 className="mb-4 text-2xl font-bold">Similar Series</h2>
-            <div className="grid grid-cols-2 gap-6 sm:grid-cols-3 lg:grid-cols-4">
-              {similarSeries.map((item) => (
-                <Link
-                  key={item.id}
-                  to={`/series/${item.id}`}
-                  className="media-card"
-                >
-                  <img
-                    src={getPosterUrl(item.poster_path)}
-                    alt={item.name}
-                    className="aspect-[2/3] w-full object-cover"
-                  />
-                  <div className="p-4">
-                    <h3 className="line-clamp-1 font-semibold">{item.name}</h3>
-                    <p className="mt-2 text-sm text-slate-400">
-                      {item.first_air_date || "N/A"}
-                    </p>
-                  </div>
-                </Link>
-              ))}
-            </div>
-          </div>
-        )}
+        <MediaRail title="Recommended Series" items={recommendedSeries} />
+        <MediaRail title="Similar Series" items={similarSeries} />
       </div>
     </section>
   );
 };
 
-const ProviderSection = ({ title, providers }) => {
-  return (
-    <div className="rounded-2xl border border-white/10 bg-black/22 p-5">
-      <h3 className="mb-4 text-lg font-semibold">{title}</h3>
+const Fact = ({ label, value }) => (
+  <div className="rounded-2xl border border-white/10 bg-white/[0.045] p-3">
+    <p className="text-[0.68rem] font-bold uppercase tracking-[0.16em] text-slate-500">
+      {label}
+    </p>
+    <p className="mt-1 text-sm font-semibold text-slate-100">{value}</p>
+  </div>
+);
 
-      {providers.length > 0 ? (
-        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
-          {providers.map((provider) => (
-            <div
-              key={`${title}-${provider.provider_id}`}
-              className="flex flex-col items-center rounded-xl border border-white/10 p-3 text-center"
-            >
-              <img
-                src={`https://image.tmdb.org/t/p/w185${provider.logo_path}`}
-                alt={provider.provider_name}
-                className="mb-3 h-14 w-14 rounded-xl object-cover"
-              />
-              <p className="text-sm text-slate-300">{provider.provider_name}</p>
+const Info = ({ label, value }) => (
+  <p>
+    <span className="font-semibold text-white">{label}:</span> {value}
+  </p>
+);
+
+const MediaRail = ({ title, items }) => {
+  if (!items.length) return null;
+
+  return (
+    <div className="mt-12">
+      <h2 className="mb-4 text-2xl font-bold">{title}</h2>
+      <div className="grid grid-cols-2 gap-6 sm:grid-cols-3 lg:grid-cols-4">
+        {items.map((item) => (
+          <Link key={item.id} to={`/series/${item.id}`} className="media-card">
+            <img
+              src={getPosterUrl(item.poster_path)}
+              alt={item.name}
+              className="aspect-[2/3] w-full object-cover"
+            />
+            <div className="p-4">
+              <h3 className="line-clamp-1 font-semibold">{item.name}</h3>
+              <p className="mt-2 text-sm text-slate-400">
+                {item.first_air_date || "N/A"}
+              </p>
             </div>
-          ))}
-        </div>
-      ) : (
-        <p className="text-sm text-slate-400">No providers available.</p>
-      )}
+          </Link>
+        ))}
+      </div>
     </div>
   );
 };
