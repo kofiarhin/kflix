@@ -9,6 +9,7 @@ import MovieDetails from "./pages/MovieDetails/MovieDetails";
 import Movies from "./pages/Movies/Movies";
 import Profile from "./pages/Profile/Profile";
 import Register from "./pages/Register/Register";
+import EpisodeDetails from "./pages/EpisodeDetails/EpisodeDetails";
 import SeriesDetails from "./pages/SeriesDetails/SeriesDetails";
 import Series from "./pages/Series/Series";
 import Settings from "./pages/Settings/Settings";
@@ -26,6 +27,10 @@ const App = () => {
             <Route path="/movies/:id" element={<MovieDetails />} />
             <Route path="/series" element={<Series />} />
             <Route path="/series/:id" element={<SeriesDetails />} />
+            <Route
+              path="/series/:id/season/:seasonNumber/episode/:episodeNumber"
+              element={<EpisodeDetails />}
+            />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
             <Route
